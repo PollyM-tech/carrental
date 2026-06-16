@@ -10,8 +10,6 @@
 
 import type * as auth from "../auth.js";
 import type * as authTest from "../authTest.js";
-import type * as cars from "../cars.js";
-import type * as settings from "../settings.js";
 
 import type {
   ApiFromModules,
@@ -22,8 +20,6 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   authTest: typeof authTest;
-  cars: typeof cars;
-  settings: typeof settings;
 }>;
 
 /**
