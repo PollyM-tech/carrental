@@ -1,16 +1,32 @@
-// src/app/dashboard/page.tsx
 import { withAuth } from "@workos-inc/authkit-nextjs";
 import { redirect } from "next/navigation";
 
-const ADMIN_EMAILS = ["mobricarhire@gmail.com"];
+const ADMIN_ROLES = new Set(["platform_admin", "platform-admin", "admin"]);
+const STAFF_ROLES = new Set(["staff"]);
+
+function hasAllowedRole(role?: string, roles?: string[]) {
+  const allRoles = [role, ...(roles ?? [])].filter(
+    (currentRole): currentRole is string => Boolean(currentRole),
+  );
+  return allRoles.some((currentRole) => {
+    const normalizedRole = currentRole.toLowerCase();
+    return ADMIN_ROLES.has(normalizedRole) || STAFF_ROLES.has(normalizedRole);
+  });
+}
 
 export default async function DashboardPage() {
-  const { user } = await withAuth({ ensureSignedIn: true });
+  const { user, organizationId, role, roles } = await withAuth({
+    ensureSignedIn: true,
+  });
 
-  const email = user?.email?.toLowerCase();
+  const adminOrgId = process.env.WORKOS_ADMIN_ORG_ID;
+  const staffOrgId = process.env.WORKOS_STAFF_ORG_ID;
+  const isKnownOperationsOrg =
+    Boolean(organizationId) &&
+    (organizationId === adminOrgId || organizationId === staffOrgId);
 
-  if (!email || !ADMIN_EMAILS.includes(email)) {
-    redirect("/sign-out");
+  if (!isKnownOperationsOrg && !hasAllowedRole(role, roles)) {
+    redirect("/unauthorized");
   }
 
   return (
@@ -21,12 +37,11 @@ export default async function DashboardPage() {
         </p>
 
         <h1 className="mt-3 text-3xl font-black text-[#0A1628]">
-          Welcome, {user?.firstName || user?.email || "Admin"}
+          Welcome, {user.firstName || user.email}
         </h1>
 
         <p className="mt-3 text-slate-600">
-          Login is working. This dashboard is restricted to approved admin
-          accounts only.
+          Your account is authorized for operations access.
         </p>
       </section>
     </main>
