@@ -1,65 +1,42 @@
-import Image from "next/image";
-
 export default function Home() {
-return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-                href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+  return (
+    <main className="min-h-screen bg-[#f7f4ef] text-[#211a16]">
+      <section className="mx-auto flex min-h-screen w-full max-w-6xl flex-col justify-center gap-12 px-6 py-16 lg:flex-row lg:items-center lg:px-8">
+        <div className="max-w-2xl">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#a15d24]">
+            MoBri Car Hire
           </p>
+          <h1 className="mt-5 text-4xl font-black leading-tight sm:text-6xl">
+            Reliable car hire for trips across Kenya.
+          </h1>
+          <p className="mt-6 max-w-xl text-lg leading-8 text-[#5f534c]">
+            Book and manage verified vehicles through a secure account with
+            role-based access for customers and operations staff.
+          </p>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <a
+              href="/sign-in"
+              className="inline-flex h-12 items-center justify-center rounded-md bg-[#211a16] px-6 text-sm font-bold text-white transition hover:bg-[#3a2c24]"
+            >
+              Sign in
+            </a>
+            <a
+              href="/sign-up"
+              className="inline-flex h-12 items-center justify-center rounded-md border border-[#d6c8ba] px-6 text-sm font-bold text-[#211a16] transition hover:bg-white"
+            >
+              Create account
+            </a>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="relative aspect-[4/3] w-full max-w-md overflow-hidden rounded-lg border border-[#dfd3c7] bg-[#ebe2d8] p-8 shadow-sm">
+          <div className="absolute left-8 right-8 top-1/2 h-20 -translate-y-1/2 rounded-t-[4rem] bg-[#211a16]" />
+          <div className="absolute left-20 right-20 top-[38%] h-16 rounded-t-[3rem] bg-[#7f4a28]" />
+          <div className="absolute bottom-[28%] left-16 h-16 w-16 rounded-full border-[12px] border-[#211a16] bg-[#f7f4ef]" />
+          <div className="absolute bottom-[28%] right-16 h-16 w-16 rounded-full border-[12px] border-[#211a16] bg-[#f7f4ef]" />
+          <div className="absolute bottom-8 left-8 right-8 h-1 bg-[#c8b8a8]" />
         </div>
-      </main>
-    </div>
+      </section>
+    </main>
   );
 }

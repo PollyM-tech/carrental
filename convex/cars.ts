@@ -1,11 +1,11 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { requireAdmin } from "./auth";
+import { requireRole } from "./lib/auth";
 
 export const generateUploadUrl = mutation({
   args: {},
   handler: async (ctx) => {
-    await requireAdmin(ctx);
+    await requireRole(ctx, ["platform_admin"]);
     return await ctx.storage.generateUploadUrl();
   },
 });
@@ -13,9 +13,11 @@ export const generateUploadUrl = mutation({
 export const listCars = query({
   args: {},
   handler: async (ctx) => {
-    await requireAdmin(ctx);
+    await requireRole(ctx, ["platform_admin", "staff"]);
 
-    const cars = await ctx.db.query("cars").order("desc").collect();
+    const cars = (await ctx.db.query("cars").order("desc").collect()).filter(
+      (car) => !car.deletedAt,
+    );
 
     return await Promise.all(
       cars.map(async (car) => {
@@ -25,7 +27,7 @@ export const listCars = query({
 
         return {
           ...car,
-          displayImageUrl: uploadedImageUrl ?? car.imageUrl ?? "/hero.png",
+          displayImageUrl: uploadedImageUrl ?? car.imageUrl ?? null,
         };
       }),
     );
@@ -35,7 +37,9 @@ export const listCars = query({
 export const listPublicCars = query({
   args: {},
   handler: async (ctx) => {
-    const cars = await ctx.db.query("cars").order("desc").collect();
+    const cars = (await ctx.db.query("cars").order("desc").collect()).filter(
+      (car) => !car.deletedAt,
+    );
 
     return await Promise.all(
       cars.map(async (car) => {
@@ -45,7 +49,7 @@ export const listPublicCars = query({
 
         return {
           ...car,
-          displayImageUrl: uploadedImageUrl ?? car.imageUrl ?? "/hero.png",
+          displayImageUrl: uploadedImageUrl ?? car.imageUrl ?? null,
         };
       }),
     );
@@ -60,15 +64,15 @@ export const listFeaturedCars = query({
       .withIndex("by_featured", (q) => q.eq("isFeatured", true))
       .collect();
 
-    return await Promise.all(
-      cars.map(async (car) => {
+  return await Promise.all(
+      cars.filter((car) => !car.deletedAt).map(async (car) => {
         const uploadedImageUrl = car.imageStorageId
           ? await ctx.storage.getUrl(car.imageStorageId)
           : null;
 
         return {
           ...car,
-          displayImageUrl: uploadedImageUrl ?? car.imageUrl ?? "/hero.png",
+          displayImageUrl: uploadedImageUrl ?? car.imageUrl ?? null,
         };
       }),
     );
@@ -96,7 +100,7 @@ export const addCar = mutation({
     reviewCount: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireRole(ctx, ["platform_admin"]);
 
     return await ctx.db.insert("cars", {
       ...args,
@@ -127,7 +131,7 @@ export const updateCar = mutation({
     reviewCount: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireRole(ctx, ["platform_admin"]);
 
     const { id, ...updates } = args;
 
@@ -150,7 +154,7 @@ export const updateCarStatus = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireRole(ctx, ["platform_admin", "staff"]);
 
     await ctx.db.patch(args.id, {
       status: args.status,
@@ -167,7 +171,7 @@ export const toggleFeatured = mutation({
     isFeatured: v.boolean(),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireRole(ctx, ["platform_admin"]);
 
     await ctx.db.patch(args.id, {
       isFeatured: args.isFeatured,
@@ -183,8 +187,13 @@ export const deleteCar = mutation({
     id: v.id("cars"),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
-    await ctx.db.delete(args.id);
+    await requireRole(ctx, ["platform_admin"]);
+    await ctx.db.patch(args.id, {
+      status: "Maintenance",
+      isFeatured: false,
+      deletedAt: Date.now(),
+      updatedAt: Date.now(),
+    });
     return args.id;
   },
 });

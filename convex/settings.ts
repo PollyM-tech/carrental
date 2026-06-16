@@ -1,23 +1,12 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { requireAdmin } from "./auth";
+import { requireRole } from "./lib/auth";
 
 export const getSettings = query({
   args: {},
   handler: async (ctx) => {
     const settings = await ctx.db.query("settings").first();
-
-    if (!settings) {
-      return {
-        businessName: "MoBri Car Hire",
-        whatsappNumber: "254716741039",
-        phoneNumber: "0716741039",
-        email: "mobricarhire@gmail.com",
-        location: "Nairobi, Kenya",
-      };
-    }
-
-    return settings;
+    return settings ?? null;
   },
 });
 
@@ -30,7 +19,7 @@ export const updateSettings = mutation({
     location: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireRole(ctx, ["platform_admin"]);
 
     const existing = await ctx.db.query("settings").first();
 

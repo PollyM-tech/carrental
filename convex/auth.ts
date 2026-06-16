@@ -1,28 +1,10 @@
 import type { QueryCtx, MutationCtx } from "./_generated/server";
+import { requireRole } from "./lib/auth";
 
 type Ctx = QueryCtx | MutationCtx;
 
 export async function requireAdmin(ctx: Ctx) {
-  const identity = await ctx.auth.getUserIdentity();
-
-  if (!identity) {
-    throw new Error("You must be signed in.");
-  }
-
-  const adminEmail = process.env.ADMIN_EMAIL;
-
-  if (!adminEmail) {
-    throw new Error("ADMIN_EMAIL is not configured in Convex.");
-  }
-
-  const userEmail = identity.email?.toLowerCase();
-  const allowedEmail = adminEmail.toLowerCase();
-
-  if (userEmail !== allowedEmail) {
-    throw new Error("You are not authorized as an admin.");
-  }
-
-  return identity;
+  return await requireRole(ctx, ["platform_admin"]);
 }
 
 export async function getCurrentUser(ctx: Ctx) {
