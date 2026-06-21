@@ -65,9 +65,10 @@ export default defineSchema({
 
   // ─── BOOKINGS ─────────────────────────────────────────────────────────────
   bookings: defineTable({
-    // Relations
-    userId:         v.id("users"),
-    carId:          v.id("cars"),
+    // Relations are optional to preserve bookings captured before accounts and
+    // vehicle records were linked to every request.
+    userId:         v.optional(v.id("users")),
+    carId:          v.optional(v.id("cars")),
 
     // Status lifecycle: pending → confirmed → active → completed | cancelled
     status:         v.union(
@@ -76,22 +77,35 @@ export default defineSchema({
                       v.literal("active"),
                       v.literal("completed"),
                       v.literal("cancelled"),
+                      v.literal("Pending"),
+                      v.literal("Confirmed"),
+                      v.literal("Active"),
+                      v.literal("Completed"),
+                      v.literal("Cancelled"),
                     ),
 
     // Dates stored as ISO strings (YYYY-MM-DD) for display safety
-    startDate:      v.string(),
-    endDate:        v.string(),
-    totalDays:      v.number(),
-    totalAmount:    v.number(),   // pricePerDay * totalDays, computed on create
+    startDate:      v.optional(v.string()),
+    endDate:        v.optional(v.string()),
+    pickupDate:     v.optional(v.string()),
+    returnDate:     v.optional(v.string()),
+    totalDays:      v.optional(v.number()),
+    totalAmount:    v.optional(v.number()),   // pricePerDay * totalDays, computed on create
 
     // Customer snapshot — stored so booking record is self-contained
     // even if user updates their profile later
     customerName:   v.string(),
-    customerEmail:  v.string(),
-    customerPhone:  v.string(),
+    customerEmail:  v.optional(v.string()),
+    customerPhone:  v.optional(v.string()),
+    email:          v.optional(v.string()),
+    phone:          v.optional(v.string()),
 
     // Optional
     notes:          v.optional(v.string()),
+    message:        v.optional(v.string()),
+    carName:        v.optional(v.string()),
+    pickupLocation: v.optional(v.string()),
+    returnLocation: v.optional(v.string()),
     cancelReason:   v.optional(v.string()),
 
     // Audit

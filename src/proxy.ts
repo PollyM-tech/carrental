@@ -1,6 +1,7 @@
 import { authkitMiddleware } from "@workos-inc/authkit-nextjs";
 
 export default authkitMiddleware({
+  eagerAuth: true,
   middlewareAuth: {
     enabled: true,
     unauthenticatedPaths: [
@@ -15,8 +16,6 @@ export default authkitMiddleware({
 
 export const config = {
   matcher: [
-    "/dashboard/:path*",
-    "/bookings/:path*",
-    "/profile/:path*",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)",
   ],
 };
