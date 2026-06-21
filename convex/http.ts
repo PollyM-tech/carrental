@@ -126,12 +126,16 @@ const webhookFunctions = {
   updateUser: makeFunctionReference<"mutation", UserUpdatePayload, null>(
     "webhooks:updateUser",
   ),
-  deactivateUser: makeFunctionReference<"mutation", UserDeactivatePayload, null>(
-    "webhooks:deactivateUser",
-  ),
-  updateUserRole: makeFunctionReference<"mutation", UserRoleUpdatePayload, null>(
-    "webhooks:updateUserRole",
-  ),
+  deactivateUser: makeFunctionReference<
+    "mutation",
+    UserDeactivatePayload,
+    null
+  >("webhooks:deactivateUser"),
+  updateUserRole: makeFunctionReference<
+    "mutation",
+    UserRoleUpdatePayload,
+    null
+  >("webhooks:updateUserRole"),
 };
 
 function jsonError(message: string, status: number) {
@@ -139,7 +143,11 @@ function jsonError(message: string, status: number) {
 }
 
 function parseWorkosPayload(value: unknown): WorkosWebhookPayload {
-  if (!isObject(value) || typeof value.event !== "string" || !isObject(value.data)) {
+  if (
+    !isObject(value) ||
+    typeof value.event !== "string" ||
+    !isObject(value.data)
+  ) {
     throw new WebhookValidationError("Invalid payload");
   }
 
@@ -163,7 +171,9 @@ function parseUserData(data: Record<string, unknown>): WorkosUserData {
   };
 }
 
-function parseMembershipData(data: Record<string, unknown>): WorkosMembershipData {
+function parseMembershipData(
+  data: Record<string, unknown>,
+): WorkosMembershipData {
   if (typeof data.user_id !== "string") {
     throw new WebhookValidationError("Invalid membership payload");
   }
@@ -197,7 +207,10 @@ function isObject(value: unknown): value is Record<string, unknown> {
 function resolveRole(data: WorkosMembershipData): UserRole {
   const adminOrgId = process.env.WORKOS_ADMIN_ORG_ID;
   const staffOrgId = process.env.WORKOS_STAFF_ORG_ID;
-  const roleSlugs = [data.role?.slug, ...(data.roles?.map((role) => role.slug) ?? [])]
+  const roleSlugs = [
+    data.role?.slug,
+    ...(data.roles?.map((role) => role.slug) ?? []),
+  ]
     .filter((slug): slug is string => Boolean(slug))
     .map((slug) => slug.replace(/-/g, "_").toLowerCase());
 
@@ -254,7 +267,11 @@ async function createHmacHex(secret: string, value: string) {
     false,
     ["sign"],
   );
-  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(value));
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    encoder.encode(value),
+  );
   return [...new Uint8Array(signature)]
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
@@ -271,7 +288,10 @@ function constantTimeEqual(left: string, right: string) {
   return result === 0;
 }
 
-async function handleUserCreated(ctx: ActionCtx, data: Record<string, unknown>) {
+async function handleUserCreated(
+  ctx: ActionCtx,
+  data: Record<string, unknown>,
+) {
   const { id, email, first_name, last_name, profile_picture_url } =
     parseUserData(data);
 
@@ -287,7 +307,10 @@ async function handleUserCreated(ctx: ActionCtx, data: Record<string, unknown>) 
   });
 }
 
-async function handleUserUpdated(ctx: ActionCtx, data: Record<string, unknown>) {
+async function handleUserUpdated(
+  ctx: ActionCtx,
+  data: Record<string, unknown>,
+) {
   const { id, email, first_name, last_name, profile_picture_url } =
     parseUserData(data);
 
@@ -307,7 +330,10 @@ async function handleUserUpdated(ctx: ActionCtx, data: Record<string, unknown>) 
   }
 }
 
-async function handleUserDeleted(ctx: ActionCtx, data: Record<string, unknown>) {
+async function handleUserDeleted(
+  ctx: ActionCtx,
+  data: Record<string, unknown>,
+) {
   const { id } = parseUserData({
     ...data,
     email: typeof data.email === "string" ? data.email : "deleted@workos.local",

@@ -1,77 +1,99 @@
 ## Project structure
-
-carrental/
-├── convex/
-│   ├── schema.ts
-│   ├── cars.ts
+N/B - USE THIS to check project tree tree -L 4 -I "node_modules|.next|.git"
+.
+├── convex
+│   ├── auth.config.ts
+│   ├── authTest.ts
+│   ├── auth.ts
 │   ├── bookings.ts
+│   ├── cars.ts
+│   ├── _generated
+│   │   ├── api.d.ts
+│   │   ├── api.js
+│   │   ├── dataModel.d.ts
+│   │   ├── server.d.ts
+│   │   └── server.js
+│   ├── http.ts
+│   ├── lib
+│   │   └── auth.ts
+│   ├── schema.ts
+│   ├── settings.ts
 │   ├── users.ts
-│   └── _generated/
-│
-├── frontend/
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── layout.tsx
-│   │   │   ├── page.tsx
-│   │   │   ├── globals.css
-│   │   │   ├── booking/
-│   │   │   │   └── page.tsx
-│   │   │   ├── fleet/
-│   │   │   │   └── page.tsx
-│   │   │   ├── services/
-│   │   │   │   └── page.tsx
-│   │   │   ├── about/
-│   │   │   │   └── page.tsx
-│   │   │   ├── contact/
-│   │   │   │   └── page.tsx
-│   │   │   └── dashboard/
-│   │   │       └── page.tsx
-│   │   │
-│   │   ├── components/
-│   │   │   ├── Navbar.tsx
-│   │   │   ├── Hero.tsx
-│   │   │   ├── BookingBar.tsx
-│   │   │   ├── Categories.tsx
-│   │   │   ├── FeaturedCars.tsx
-│   │   │   ├── Services.tsx
-│   │   │   ├── AboutUs.tsx
-│   │   │   ├── WhyChooseUs.tsx
-│   │   │   ├── Testimonials.tsx
-│   │   │   ├── FAQ.tsx
-│   │   │   ├── CTASection.tsx
-│   │   │   ├── FloatingWhatsApp.tsx
-│   │   │   └── Footer.tsx
-│   │   │
-│   │   ├── assets/
-│   │   │   ├── Logo.png
-│   │   │   ├── hero.png
-│   │   │   ├── affordable-car.png
-│   │   │   ├── executive-suv.png
-│   │   │   ├── midrange-suv.png
-│   │   │   └── group-van.png
-│   │   │
-│   │   ├── data/
-│   │   │   └── cars.ts
-│   │   │
-│   │   ├── lib/
-│   │   │   ├── convex.ts
-│   │   │   ├── utils.ts
-│   │   │   └── whatsapp.ts
-│   │   │
-│   │   └── providers/
-│   │       └── ConvexProvider.tsx
-│   │
-│   ├── public/
-│   ├── package.json
-│   ├── package-lock.json
-│   ├── next.config.ts
-│   ├── tsconfig.json
-│   ├── postcss.config.mjs
-│   ├── eslint.config.mjs
-│   └── .env.local
-│
+│   └── webhooks.ts
+├── eslint.config.mjs
+├── next.config.ts
+├── next-env.d.ts
 ├── package.json
 ├── package-lock.json
-├── node_modules/
-├── .gitignore
-└── README.md
+├── postcss.config.mjs
+├── public
+│   ├── file.svg
+│   ├── globe.svg
+│   ├── next.svg
+│   ├── vercel.svg
+│   └── window.svg
+├── README.md
+├── src
+│   ├── app
+│   │   ├── about
+│   │   │   └── page.tsx
+│   │   ├── auth-test
+│   │   │   └── page.tsx
+│   │   ├── callback
+│   │   │   └── route.ts
+│   │   ├── cars
+│   │   │   └── page.tsx
+│   │   ├── contact
+│   │   │   └── page.tsx
+│   │   ├── dashboard
+│   │   │   ├── bookings
+│   │   │   ├── cars
+│   │   │   ├── page.tsx
+│   │   │   └── settings
+│   │   ├── faq
+│   │   │   └── page.tsx
+│   │   ├── favicon.ico
+│   │   ├── globals.css
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   ├── services
+│   │   │   └── page.tsx
+│   │   ├── sign-in
+│   │   │   └── route.ts
+│   │   ├── sign-out
+│   │   │   └── route.ts
+│   │   ├── sign-up
+│   │   │   └── route.ts
+│   │   ├── token-test
+│   │   │   └── page.tsx
+│   │   └── unauthorized
+│   │       └── page.tsx
+│   ├── components
+│   │   ├── admin
+│   │   │   ├── AdminHeader.tsx
+│   │   │   ├── AdminSidebar.tsx
+│   │   │   ├── BookingsTable.tsx
+│   │   │   ├── CarForm.tsx
+│   │   │   └── CarsTable.tsx
+│   │   ├── forms
+│   │   │   └── PublicBookingForm.tsx
+│   │   ├── home
+│   │   │   ├── BookingForm.tsx
+│   │   │   ├── CTASection.tsx
+│   │   │   ├── FAQPreview.tsx
+│   │   │   ├── FeaturedCars.tsx
+│   │   │   ├── Hero.tsx
+│   │   │   ├── ServicesPreview.tsx
+│   │   │   ├── Testimonials.tsx
+│   │   │   └── WhyChooseUs.tsx
+│   │   ├── layout
+│   │   │   ├── Footer.tsx
+│   │   │   └── Navbar.tsx
+│   │   └── shared
+│   │       ├── EmptyState.tsx
+│   │       ├── SectionHeader.tsx
+│   │       └── WhatsAppButton.tsx
+│   ├── providers
+│   │   └── convex-provider.tsx
+│   └── proxy.ts
+└── tsconfig.json

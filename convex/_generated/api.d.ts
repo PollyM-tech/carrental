@@ -10,6 +10,13 @@
 
 import type * as auth from "../auth.js";
 import type * as authTest from "../authTest.js";
+import type * as bookings from "../bookings.js";
+import type * as cars from "../cars.js";
+import type * as http from "../http.js";
+import type * as lib_auth from "../lib/auth.js";
+import type * as settings from "../settings.js";
+import type * as users from "../users.js";
+import type * as webhooks from "../webhooks.js";
 
 import type {
   ApiFromModules,
@@ -20,6 +27,13 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   authTest: typeof authTest;
+  bookings: typeof bookings;
+  cars: typeof cars;
+  http: typeof http;
+  "lib/auth": typeof lib_auth;
+  settings: typeof settings;
+  users: typeof users;
+  webhooks: typeof webhooks;
 }>;
 
 /**

@@ -99,19 +99,24 @@ export const create = mutation({
 
     const startDate = new Date(args.startDate);
     const endDate = new Date(args.endDate);
-    const totalDays = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+    const totalDays = Math.max(
+      1,
+      Math.ceil(
+        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+      ),
+    );
 
     const overlappingBookings = await ctx.db
       .query("bookings")
       .withIndex("by_car_and_status", (q) =>
-        q.eq("carId", args.carId).eq("status", "pending")
+        q.eq("carId", args.carId).eq("status", "pending"),
       )
       .collect();
 
     const activeBookings = await ctx.db
       .query("bookings")
       .withIndex("by_car_and_status", (q) =>
-        q.eq("carId", args.carId).eq("status", "confirmed")
+        q.eq("carId", args.carId).eq("status", "confirmed"),
       )
       .collect();
 
@@ -127,7 +132,9 @@ export const create = mutation({
         args.startDate < existingEndDate &&
         args.endDate > existingStartDate
       ) {
-        throw new ConvexError("This vehicle is already booked for those dates.");
+        throw new ConvexError(
+          "This vehicle is already booked for those dates.",
+        );
       }
     }
 
@@ -141,7 +148,8 @@ export const create = mutation({
       endDate: args.endDate,
       totalDays,
       totalAmount,
-      customerName: `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email,
+      customerName:
+        `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email,
       customerEmail: user.email,
       customerPhone: args.customerPhone,
       notes: args.notes,
@@ -180,7 +188,7 @@ export const myBookings = query({
           status: normalizeBookingStatus(booking.status),
           displayImageUrl: uploadedImageUrl ?? car?.imageUrl ?? null,
         };
-      })
+      }),
     );
   },
 });
@@ -193,8 +201,8 @@ export const listAll = query({
         v.literal("confirmed"),
         v.literal("active"),
         v.literal("completed"),
-        v.literal("cancelled")
-      )
+        v.literal("cancelled"),
+      ),
     ),
   },
   handler: async (ctx, args) => {
@@ -209,7 +217,9 @@ export const listAll = query({
         .collect();
       const legacyBookings = await ctx.db
         .query("bookings")
-        .withIndex("by_status", (q) => q.eq("status", legacyBookingStatus(status)))
+        .withIndex("by_status", (q) =>
+          q.eq("status", legacyBookingStatus(status)),
+        )
         .order("desc")
         .collect();
       const bookings = [...normalizedBookings, ...legacyBookings].sort(
@@ -230,7 +240,7 @@ export const listAll = query({
             endDate: readBookingEndDate(booking),
             status: normalizeBookingStatus(booking.status),
           };
-        })
+        }),
       );
     }
 
@@ -250,7 +260,7 @@ export const listAll = query({
           endDate: readBookingEndDate(booking),
           status: normalizeBookingStatus(booking.status),
         };
-      })
+      }),
     );
   },
 });
@@ -405,7 +415,11 @@ export const getStats = query({
     const currentYear = now.getFullYear();
 
     const completedThisMonth = allBookings.filter((booking) => {
-      if (normalizeBookingStatus(booking.status) !== "completed" || !booking.completedAt) return false;
+      if (
+        normalizeBookingStatus(booking.status) !== "completed" ||
+        !booking.completedAt
+      )
+        return false;
       const completedDate = new Date(booking.completedAt);
       return (
         completedDate.getMonth() === currentMonth &&
@@ -415,16 +429,26 @@ export const getStats = query({
 
     const revenueThisMonth = completedThisMonth.reduce(
       (sum, booking) => sum + (booking.totalAmount ?? 0),
-      0
+      0,
     );
 
     return {
       totalBookings: allBookings.length,
-      pendingBookings: allBookings.filter((b) => normalizeBookingStatus(b.status) === "pending").length,
-      confirmedBookings: allBookings.filter((b) => normalizeBookingStatus(b.status) === "confirmed").length,
-      activeBookings: allBookings.filter((b) => normalizeBookingStatus(b.status) === "active").length,
-      completedBookings: allBookings.filter((b) => normalizeBookingStatus(b.status) === "completed").length,
-      cancelledBookings: allBookings.filter((b) => normalizeBookingStatus(b.status) === "cancelled").length,
+      pendingBookings: allBookings.filter(
+        (b) => normalizeBookingStatus(b.status) === "pending",
+      ).length,
+      confirmedBookings: allBookings.filter(
+        (b) => normalizeBookingStatus(b.status) === "confirmed",
+      ).length,
+      activeBookings: allBookings.filter(
+        (b) => normalizeBookingStatus(b.status) === "active",
+      ).length,
+      completedBookings: allBookings.filter(
+        (b) => normalizeBookingStatus(b.status) === "completed",
+      ).length,
+      cancelledBookings: allBookings.filter(
+        (b) => normalizeBookingStatus(b.status) === "cancelled",
+      ).length,
       revenueThisMonth,
       totalCars: allCars.length,
       availableCars: allCars.filter((c) => c.status === "Available").length,

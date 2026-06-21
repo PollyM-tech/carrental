@@ -22,7 +22,9 @@ export const upsertUser = mutation({
   handler: async (ctx, args) => {
     const existing = await ctx.db
       .query("users")
-      .withIndex("by_workosUserId", (q) => q.eq("workosUserId", args.workosUserId))
+      .withIndex("by_workosUserId", (q) =>
+        q.eq("workosUserId", args.workosUserId),
+      )
       .first();
 
     if (!existing) {
@@ -42,7 +44,8 @@ export const upsertUser = mutation({
 
     await ctx.db.patch(existing._id, {
       email: args.email,
-      workosOrganizationId: args.workosOrganizationId ?? existing.workosOrganizationId,
+      workosOrganizationId:
+        args.workosOrganizationId ?? existing.workosOrganizationId,
       firstName: args.firstName,
       lastName: args.lastName,
       avatarUrl: args.avatarUrl,
@@ -63,7 +66,9 @@ export const getUserByWorkosId = query({
   handler: async (ctx, args) => {
     return await ctx.db
       .query("users")
-      .withIndex("by_workosUserId", (q) => q.eq("workosUserId", args.workosUserId))
+      .withIndex("by_workosUserId", (q) =>
+        q.eq("workosUserId", args.workosUserId),
+      )
       .first();
   },
 });

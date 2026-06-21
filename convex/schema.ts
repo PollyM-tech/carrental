@@ -3,137 +3,135 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
-
   // ─── USERS ────────────────────────────────────────────────────────────────
   // Synced from WorkOS via webhook. Never created directly by the client.
   users: defineTable({
-    workosUserId:   v.string(),
-    email:          v.string(),
+    workosUserId: v.string(),
+    email: v.string(),
     workosOrganizationId: v.optional(v.string()),
-    role:           v.union(
-                      v.literal("platform_admin"),
-                      v.literal("staff"),
-                      v.literal("customer"),
-                    ),
-    firstName:      v.optional(v.string()),
-    lastName:       v.optional(v.string()),
-    phone:          v.optional(v.string()),
-    avatarUrl:      v.optional(v.string()),
-    isActive:       v.boolean(),
-    createdAt:      v.number(),
-    updatedAt:      v.optional(v.number()),
-    lastSyncedAt:   v.optional(v.number()),
-    deletedAt:      v.optional(v.number()),
+    role: v.union(
+      v.literal("platform_admin"),
+      v.literal("staff"),
+      v.literal("customer"),
+    ),
+    firstName: v.optional(v.string()),
+    lastName: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    avatarUrl: v.optional(v.string()),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+    lastSyncedAt: v.optional(v.number()),
+    deletedAt: v.optional(v.number()),
   })
     .index("by_workosUserId", ["workosUserId"])
-    .index("by_email",        ["email"])
+    .index("by_email", ["email"])
     .index("by_workosOrganizationId", ["workosOrganizationId"])
-    .index("by_role",         ["role"]),
+    .index("by_role", ["role"]),
 
   // ─── CARS ─────────────────────────────────────────────────────────────────
   cars: defineTable({
-    name:           v.string(),
-    category:       v.string(),
-    pricePerDay:    v.number(),
+    name: v.string(),
+    category: v.string(),
+    pricePerDay: v.number(),
 
     imageStorageId: v.optional(v.id("_storage")),
-    imageUrl:       v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
 
-    seats:          v.number(),
-    transmission:   v.string(),
-    fuel:           v.string(),
+    seats: v.number(),
+    transmission: v.string(),
+    fuel: v.string(),
 
-    status:         v.union(
-                      v.literal("Available"),
-                      v.literal("Booked"),
-                      v.literal("Maintenance"),
-                    ),
+    status: v.union(
+      v.literal("Available"),
+      v.literal("Booked"),
+      v.literal("Maintenance"),
+    ),
 
-    description:    v.string(),
-    isFeatured:     v.boolean(),
+    description: v.string(),
+    isFeatured: v.boolean(),
 
-    rating:         v.optional(v.number()),
-    reviewCount:    v.optional(v.number()),
+    rating: v.optional(v.number()),
+    reviewCount: v.optional(v.number()),
 
-    createdAt:      v.number(),
-    updatedAt:      v.optional(v.number()),
-    deletedAt:      v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+    deletedAt: v.optional(v.number()),
   })
-    .index("by_featured",  ["isFeatured"])
-    .index("by_status",    ["status"])
-    .index("by_category",  ["category"]),
+    .index("by_featured", ["isFeatured"])
+    .index("by_status", ["status"])
+    .index("by_category", ["category"]),
 
   // ─── BOOKINGS ─────────────────────────────────────────────────────────────
   bookings: defineTable({
     // Relations are optional to preserve bookings captured before accounts and
     // vehicle records were linked to every request.
-    userId:         v.optional(v.id("users")),
-    carId:          v.optional(v.id("cars")),
+    userId: v.optional(v.id("users")),
+    carId: v.optional(v.id("cars")),
 
     // Status lifecycle: pending → confirmed → active → completed | cancelled
-    status:         v.union(
-                      v.literal("pending"),
-                      v.literal("confirmed"),
-                      v.literal("active"),
-                      v.literal("completed"),
-                      v.literal("cancelled"),
-                      v.literal("Pending"),
-                      v.literal("Confirmed"),
-                      v.literal("Active"),
-                      v.literal("Completed"),
-                      v.literal("Cancelled"),
-                    ),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("confirmed"),
+      v.literal("active"),
+      v.literal("completed"),
+      v.literal("cancelled"),
+      v.literal("Pending"),
+      v.literal("Confirmed"),
+      v.literal("Active"),
+      v.literal("Completed"),
+      v.literal("Cancelled"),
+    ),
 
     // Dates stored as ISO strings (YYYY-MM-DD) for display safety
-    startDate:      v.optional(v.string()),
-    endDate:        v.optional(v.string()),
-    pickupDate:     v.optional(v.string()),
-    returnDate:     v.optional(v.string()),
-    totalDays:      v.optional(v.number()),
-    totalAmount:    v.optional(v.number()),   // pricePerDay * totalDays, computed on create
+    startDate: v.optional(v.string()),
+    endDate: v.optional(v.string()),
+    pickupDate: v.optional(v.string()),
+    returnDate: v.optional(v.string()),
+    totalDays: v.optional(v.number()),
+    totalAmount: v.optional(v.number()), // pricePerDay * totalDays, computed on create
 
     // Customer snapshot — stored so booking record is self-contained
     // even if user updates their profile later
-    customerName:   v.string(),
-    customerEmail:  v.optional(v.string()),
-    customerPhone:  v.optional(v.string()),
-    email:          v.optional(v.string()),
-    phone:          v.optional(v.string()),
+    customerName: v.string(),
+    customerEmail: v.optional(v.string()),
+    customerPhone: v.optional(v.string()),
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
 
     // Optional
-    notes:          v.optional(v.string()),
-    message:        v.optional(v.string()),
-    carName:        v.optional(v.string()),
+    notes: v.optional(v.string()),
+    message: v.optional(v.string()),
+    carName: v.optional(v.string()),
     pickupLocation: v.optional(v.string()),
     returnLocation: v.optional(v.string()),
-    cancelReason:   v.optional(v.string()),
+    cancelReason: v.optional(v.string()),
 
     // Audit
-    confirmedBy:    v.optional(v.id("users")),  // staff/admin who confirmed
-    cancelledBy:    v.optional(v.id("users")),  // staff/admin who cancelled
-    confirmedAt:    v.optional(v.number()),
-    cancelledAt:    v.optional(v.number()),
-    completedAt:    v.optional(v.number()),
+    confirmedBy: v.optional(v.id("users")), // staff/admin who confirmed
+    cancelledBy: v.optional(v.id("users")), // staff/admin who cancelled
+    confirmedAt: v.optional(v.number()),
+    cancelledAt: v.optional(v.number()),
+    completedAt: v.optional(v.number()),
 
-    createdAt:      v.number(),
-    updatedAt:      v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
   })
-    .index("by_userId",    ["userId"])
-    .index("by_carId",     ["carId"])
-    .index("by_status",    ["status"])
+    .index("by_userId", ["userId"])
+    .index("by_carId", ["carId"])
+    .index("by_status", ["status"])
     .index("by_createdAt", ["createdAt"])
     .index("by_car_and_status", ["carId", "status"]),
 
   // ─── SETTINGS ─────────────────────────────────────────────────────────────
   // Single-row table. Always upsert, never insert a second row.
   settings: defineTable({
-    businessName:     v.string(),
-    whatsappNumber:   v.string(),
-    phoneNumber:      v.optional(v.string()),
-    email:            v.optional(v.string()),
-    location:         v.optional(v.string()),
-    createdAt:        v.number(),
-    updatedAt:        v.optional(v.number()),
+    businessName: v.string(),
+    whatsappNumber: v.string(),
+    phoneNumber: v.optional(v.string()),
+    email: v.optional(v.string()),
+    location: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
   }),
-
 });
