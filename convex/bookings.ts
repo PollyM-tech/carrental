@@ -1,158 +1,186 @@
-import { mutation, query } from "./_generated/server";
 import { ConvexError, v } from "convex/values";
+import { mutation, query, type MutationCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { requireAuth, requireRole } from "./lib/auth";
 
-type NormalizedBookingStatus =
+const bookingStatusValidator = v.union(
+  v.literal("pending"),
+  v.literal("confirmed"),
+  v.literal("active"),
+  v.literal("completed"),
+  v.literal("cancelled"),
+);
+
+type BookingStatus =
   | "pending"
   | "confirmed"
   | "active"
   | "completed"
   | "cancelled";
 
-function normalizeBookingStatus(status: string): NormalizedBookingStatus {
-  const normalized = status.toLowerCase();
+function calculateTotalDays(pickupDate?: string, returnDate?: string) {
+  if (!pickupDate || !returnDate) return undefined;
 
+  const pickup = new Date(pickupDate);
+  const returned = new Date(returnDate);
+
+  if (Number.isNaN(pickup.getTime()) || Number.isNaN(returned.getTime())) {
+    return undefined;
+  }
+
+  return Math.max(
+    1,
+    Math.ceil((returned.getTime() - pickup.getTime()) / (1000 * 60 * 60 * 24)),
+  );
+}
+
+function bookingDatesOverlap({
+  newPickupDate,
+  newReturnDate,
+  existingPickupDate,
+  existingReturnDate,
+}: {
+  newPickupDate?: string;
+  newReturnDate?: string;
+  existingPickupDate?: string;
+  existingReturnDate?: string;
+}) {
   if (
-    normalized === "pending" ||
-    normalized === "confirmed" ||
-    normalized === "active" ||
-    normalized === "completed" ||
-    normalized === "cancelled"
+    !newPickupDate ||
+    !newReturnDate ||
+    !existingPickupDate ||
+    !existingReturnDate
   ) {
-    return normalized;
+    return false;
   }
 
-  return "pending";
+  return (
+    newPickupDate < existingReturnDate && newReturnDate > existingPickupDate
+  );
 }
 
-function legacyBookingStatus(status: NormalizedBookingStatus) {
-  switch (status) {
-    case "pending":
-      return "Pending";
-    case "confirmed":
-      return "Confirmed";
-    case "active":
-      return "Active";
-    case "completed":
-      return "Completed";
-    case "cancelled":
-      return "Cancelled";
-  }
-}
+async function checkCarBookingConflict(
+  ctx: MutationCtx,
+  carId: Id<"cars">,
+  pickupDate?: string,
+  returnDate?: string,
+) {
+  if (!pickupDate || !returnDate) return;
 
-function readBookingStartDate(booking: {
-  startDate?: string;
-  pickupDate?: string;
-}) {
-  return booking.startDate ?? booking.pickupDate ?? "";
-}
+  const statusesToCheck: BookingStatus[] = ["pending", "confirmed", "active"];
 
-function readBookingEndDate(booking: {
-  endDate?: string;
-  returnDate?: string;
-}) {
-  return booking.endDate ?? booking.returnDate ?? "";
-}
-
-function readCustomerEmail(booking: {
-  customerEmail?: string;
-  email?: string;
-}) {
-  return booking.customerEmail ?? booking.email ?? "";
-}
-
-function readCustomerPhone(booking: {
-  customerPhone?: string;
-  phone?: string;
-}) {
-  return booking.customerPhone ?? booking.phone ?? "";
-}
-
-export const create = mutation({
-  args: {
-    carId: v.id("cars"),
-    startDate: v.string(),
-    endDate: v.string(),
-    customerPhone: v.string(),
-    notes: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    const user = await requireRole(ctx, ["customer"]);
-
-    const car = await ctx.db.get(args.carId);
-    if (!car) {
-      throw new ConvexError("This vehicle is no longer available.");
-    }
-
-    if (car.status !== "Available") {
-      throw new ConvexError("This vehicle is not available for booking.");
-    }
-
-    const today = new Date().toISOString().split("T")[0];
-    if (args.startDate < today) {
-      throw new ConvexError("Please choose a current or future start date.");
-    }
-
-    if (args.endDate <= args.startDate) {
-      throw new ConvexError("Please choose an end date after the start date.");
-    }
-
-    const startDate = new Date(args.startDate);
-    const endDate = new Date(args.endDate);
-    const totalDays = Math.max(
-      1,
-      Math.ceil(
-        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
-      ),
-    );
-
-    const overlappingBookings = await ctx.db
+  for (const status of statusesToCheck) {
+    const bookings = await ctx.db
       .query("bookings")
       .withIndex("by_car_and_status", (q) =>
-        q.eq("carId", args.carId).eq("status", "pending"),
+        q.eq("carId", carId).eq("status", status),
       )
       .collect();
 
-    const activeBookings = await ctx.db
-      .query("bookings")
-      .withIndex("by_car_and_status", (q) =>
-        q.eq("carId", args.carId).eq("status", "confirmed"),
-      )
-      .collect();
+    for (const booking of bookings) {
+      const hasConflict = bookingDatesOverlap({
+        newPickupDate: pickupDate,
+        newReturnDate: returnDate,
+        existingPickupDate: booking.pickupDate,
+        existingReturnDate: booking.returnDate,
+      });
 
-    const allActiveBookings = [...overlappingBookings, ...activeBookings];
-
-    for (const booking of allActiveBookings) {
-      const existingStartDate = readBookingStartDate(booking);
-      const existingEndDate = readBookingEndDate(booking);
-
-      if (
-        existingStartDate &&
-        existingEndDate &&
-        args.startDate < existingEndDate &&
-        args.endDate > existingStartDate
-      ) {
+      if (hasConflict) {
         throw new ConvexError(
-          "This vehicle is already booked for those dates.",
+          "This vehicle already has a booking for those dates.",
         );
       }
     }
+  }
+}
 
-    const totalAmount = totalDays * car.pricePerDay;
+/**
+ * Public booking mutation.
+ *
+ * Flow:
+ * 1. Customer fills the public booking form.
+ * 2. Booking is saved to Convex as "pending".
+ * 3. Frontend redirects customer to WhatsApp with the same booking details.
+ */
+export const create = mutation({
+  args: {
+    carId: v.optional(v.id("cars")),
+    carName: v.optional(v.string()),
+
+    customerName: v.string(),
+    customerEmail: v.optional(v.string()),
+    customerPhone: v.optional(v.string()),
+
+    pickupDate: v.optional(v.string()),
+    returnDate: v.optional(v.string()),
+    pickupLocation: v.optional(v.string()),
+    returnLocation: v.optional(v.string()),
+
+    message: v.optional(v.string()),
+  },
+
+  handler: async (ctx, args) => {
+    if (!args.customerName.trim()) {
+      throw new ConvexError("Customer name is required.");
+    }
+
+    if (
+      args.pickupDate &&
+      args.returnDate &&
+      args.returnDate <= args.pickupDate
+    ) {
+      throw new ConvexError(
+        "Please choose a return date after the pickup date.",
+      );
+    }
+
+    let carName = args.carName;
+    let totalAmount: number | undefined;
+
+    const totalDays = calculateTotalDays(args.pickupDate, args.returnDate);
+
+    if (args.carId) {
+      const car = await ctx.db.get(args.carId);
+
+      if (!car || car.deletedAt) {
+        throw new ConvexError("This vehicle is no longer available.");
+      }
+
+      if (car.status !== "available") {
+        throw new ConvexError("This vehicle is not available for booking.");
+      }
+
+      await checkCarBookingConflict(
+        ctx,
+        args.carId,
+        args.pickupDate,
+        args.returnDate,
+      );
+
+      carName = car.name;
+      totalAmount = totalDays ? totalDays * car.pricePerDay : undefined;
+    }
 
     const bookingId = await ctx.db.insert("bookings", {
-      userId: user._id,
       carId: args.carId,
+      carName,
+
       status: "pending",
-      startDate: args.startDate,
-      endDate: args.endDate,
+
+      pickupDate: args.pickupDate,
+      returnDate: args.returnDate,
+      pickupLocation: args.pickupLocation,
+      returnLocation: args.returnLocation,
+
       totalDays,
       totalAmount,
-      customerName:
-        `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email,
-      customerEmail: user.email,
-      customerPhone: args.customerPhone,
-      notes: args.notes,
+
+      customerName: args.customerName.trim(),
+      customerEmail: args.customerEmail?.trim(),
+      customerPhone: args.customerPhone?.trim(),
+
+      message: args.message?.trim(),
+
       createdAt: Date.now(),
     });
 
@@ -160,8 +188,13 @@ export const create = mutation({
   },
 });
 
+/**
+ * Logged-in customer bookings.
+ * Optional for now, but useful if customer accounts are added later.
+ */
 export const myBookings = query({
   args: {},
+
   handler: async (ctx) => {
     const user = await requireRole(ctx, ["customer"]);
 
@@ -174,6 +207,7 @@ export const myBookings = query({
     return await Promise.all(
       bookings.map(async (booking) => {
         const car = booking.carId ? await ctx.db.get(booking.carId) : null;
+
         const uploadedImageUrl = car?.imageStorageId
           ? await ctx.storage.getUrl(car.imageStorageId)
           : null;
@@ -181,11 +215,6 @@ export const myBookings = query({
         return {
           ...booking,
           carName: car?.name ?? booking.carName,
-          startDate: readBookingStartDate(booking),
-          endDate: readBookingEndDate(booking),
-          customerEmail: readCustomerEmail(booking),
-          customerPhone: readCustomerPhone(booking),
-          status: normalizeBookingStatus(booking.status),
           displayImageUrl: uploadedImageUrl ?? car?.imageUrl ?? null,
         };
       }),
@@ -193,86 +222,56 @@ export const myBookings = query({
   },
 });
 
+/**
+ * Admin/staff booking list.
+ */
 export const listAll = query({
   args: {
-    status: v.optional(
-      v.union(
-        v.literal("pending"),
-        v.literal("confirmed"),
-        v.literal("active"),
-        v.literal("completed"),
-        v.literal("cancelled"),
-      ),
-    ),
+    status: v.optional(bookingStatusValidator),
   },
+
   handler: async (ctx, args) => {
     await requireRole(ctx, ["platform_admin", "staff"]);
 
-    if (args.status) {
-      const status = args.status;
-      const normalizedBookings = await ctx.db
-        .query("bookings")
-        .withIndex("by_status", (q) => q.eq("status", status))
-        .order("desc")
-        .collect();
-      const legacyBookings = await ctx.db
-        .query("bookings")
-        .withIndex("by_status", (q) =>
-          q.eq("status", legacyBookingStatus(status)),
-        )
-        .order("desc")
-        .collect();
-      const bookings = [...normalizedBookings, ...legacyBookings].sort(
-        (left, right) => right.createdAt - left.createdAt,
-      );
-
-      return await Promise.all(
-        bookings.map(async (booking) => {
-          const car = booking.carId ? await ctx.db.get(booking.carId) : null;
-
-          return {
-            ...booking,
-            carName: car?.name ?? booking.carName,
-            customerName: booking.customerName,
-            customerEmail: readCustomerEmail(booking),
-            customerPhone: readCustomerPhone(booking),
-            startDate: readBookingStartDate(booking),
-            endDate: readBookingEndDate(booking),
-            status: normalizeBookingStatus(booking.status),
-          };
-        }),
-      );
-    }
-
-    const bookings = await ctx.db.query("bookings").order("desc").collect();
+    const bookings = args.status
+      ? await ctx.db
+          .query("bookings")
+          .withIndex("by_status", (q) => q.eq("status", args.status!))
+          .order("desc")
+          .collect()
+      : await ctx.db.query("bookings").order("desc").collect();
 
     return await Promise.all(
       bookings.map(async (booking) => {
         const car = booking.carId ? await ctx.db.get(booking.carId) : null;
 
+        const uploadedImageUrl = car?.imageStorageId
+          ? await ctx.storage.getUrl(car.imageStorageId)
+          : null;
+
         return {
           ...booking,
           carName: car?.name ?? booking.carName,
-          customerName: booking.customerName,
-          customerEmail: readCustomerEmail(booking),
-          customerPhone: readCustomerPhone(booking),
-          startDate: readBookingStartDate(booking),
-          endDate: readBookingEndDate(booking),
-          status: normalizeBookingStatus(booking.status),
+          carImageUrl: uploadedImageUrl ?? car?.imageUrl ?? null,
         };
       }),
     );
   },
 });
 
+/**
+ * Admin/customer booking details.
+ */
 export const getById = query({
   args: {
     bookingId: v.id("bookings"),
   },
+
   handler: async (ctx, args) => {
     const user = await requireAuth(ctx);
 
     const booking = await ctx.db.get(args.bookingId);
+
     if (!booking) {
       throw new ConvexError("This booking could not be found.");
     }
@@ -291,11 +290,6 @@ export const getById = query({
     return {
       ...booking,
       carName: car?.name ?? booking.carName,
-      customerEmail: readCustomerEmail(booking),
-      customerPhone: readCustomerPhone(booking),
-      startDate: readBookingStartDate(booking),
-      endDate: readBookingEndDate(booking),
-      status: normalizeBookingStatus(booking.status),
       car: car
         ? {
             ...car,
@@ -307,47 +301,104 @@ export const getById = query({
   },
 });
 
+/**
+ * Admin/staff confirms a pending booking.
+ * When confirmed, linked car becomes booked.
+ */
 export const confirm = mutation({
   args: {
     bookingId: v.id("bookings"),
   },
+
   handler: async (ctx, args) => {
     const user = await requireRole(ctx, ["platform_admin", "staff"]);
 
     const booking = await ctx.db.get(args.bookingId);
+
     if (!booking) {
       throw new ConvexError("This booking could not be found.");
     }
 
-    if (normalizeBookingStatus(booking.status) !== "pending") {
-      throw new ConvexError("This booking cannot be confirmed right now.");
+    if (booking.status !== "pending") {
+      throw new ConvexError("Only pending bookings can be confirmed.");
     }
 
     await ctx.db.patch(args.bookingId, {
       status: "confirmed",
       confirmedBy: user._id,
       confirmedAt: Date.now(),
+      updatedAt: Date.now(),
     });
+
+    if (booking.carId) {
+      await ctx.db.patch(booking.carId, {
+        status: "booked",
+        updatedAt: Date.now(),
+      });
+    }
 
     return args.bookingId;
   },
 });
 
+/**
+ * Admin/staff marks a confirmed booking as active.
+ */
+export const activate = mutation({
+  args: {
+    bookingId: v.id("bookings"),
+  },
+
+  handler: async (ctx, args) => {
+    await requireRole(ctx, ["platform_admin", "staff"]);
+
+    const booking = await ctx.db.get(args.bookingId);
+
+    if (!booking) {
+      throw new ConvexError("This booking could not be found.");
+    }
+
+    if (booking.status !== "confirmed") {
+      throw new ConvexError("Only confirmed bookings can be activated.");
+    }
+
+    await ctx.db.patch(args.bookingId, {
+      status: "active",
+      updatedAt: Date.now(),
+    });
+
+    if (booking.carId) {
+      await ctx.db.patch(booking.carId, {
+        status: "booked",
+        updatedAt: Date.now(),
+      });
+    }
+
+    return args.bookingId;
+  },
+});
+
+/**
+ * Admin cancels a booking.
+ * If linked car was booked, it becomes available again.
+ */
 export const cancel = mutation({
   args: {
     bookingId: v.id("bookings"),
     cancelReason: v.string(),
   },
+
   handler: async (ctx, args) => {
     const user = await requireRole(ctx, ["platform_admin"]);
 
     const booking = await ctx.db.get(args.bookingId);
+
     if (!booking) {
       throw new ConvexError("This booking could not be found.");
     }
 
-    if (normalizeBookingStatus(booking.status) === "completed") {
-      throw new ConvexError("This booking cannot be cancelled.");
+    if (booking.status === "completed") {
+      throw new ConvexError("Completed bookings cannot be cancelled.");
     }
 
     await ctx.db.patch(args.bookingId, {
@@ -355,72 +406,92 @@ export const cancel = mutation({
       cancelReason: args.cancelReason,
       cancelledBy: user._id,
       cancelledAt: Date.now(),
+      updatedAt: Date.now(),
     });
 
-    const car = booking.carId ? await ctx.db.get(booking.carId) : null;
-    if (car && car.status === "Booked") {
-      await ctx.db.patch(car._id, {
-        status: "Available",
-        updatedAt: Date.now(),
-      });
+    if (booking.carId) {
+      const car = await ctx.db.get(booking.carId);
+
+      if (car && car.status === "booked") {
+        await ctx.db.patch(car._id, {
+          status: "available",
+          updatedAt: Date.now(),
+        });
+      }
     }
 
     return args.bookingId;
   },
 });
 
+/**
+ * Admin/staff completes a booking.
+ * When completed, linked car becomes available again.
+ */
 export const complete = mutation({
   args: {
     bookingId: v.id("bookings"),
   },
+
   handler: async (ctx, args) => {
     await requireRole(ctx, ["platform_admin", "staff"]);
 
     const booking = await ctx.db.get(args.bookingId);
+
     if (!booking) {
       throw new ConvexError("This booking could not be found.");
     }
 
-    if (normalizeBookingStatus(booking.status) !== "active") {
-      throw new ConvexError("This booking cannot be completed right now.");
+    if (booking.status !== "active" && booking.status !== "confirmed") {
+      throw new ConvexError(
+        "Only active or confirmed bookings can be completed.",
+      );
     }
 
     await ctx.db.patch(args.bookingId, {
       status: "completed",
       completedAt: Date.now(),
+      updatedAt: Date.now(),
     });
 
-    const car = booking.carId ? await ctx.db.get(booking.carId) : null;
-    if (car) {
-      await ctx.db.patch(car._id, {
-        status: "Available",
-        updatedAt: Date.now(),
-      });
+    if (booking.carId) {
+      const car = await ctx.db.get(booking.carId);
+
+      if (car) {
+        await ctx.db.patch(car._id, {
+          status: "available",
+          updatedAt: Date.now(),
+        });
+      }
     }
 
     return args.bookingId;
   },
 });
 
+/**
+ * Admin dashboard stats.
+ */
 export const getStats = query({
   args: {},
+
   handler: async (ctx) => {
     await requireRole(ctx, ["platform_admin"]);
 
     const allBookings = await ctx.db.query("bookings").collect();
     const allCars = await ctx.db.query("cars").collect();
 
+    const activeCars = allCars.filter((car) => !car.deletedAt);
+
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
     const completedThisMonth = allBookings.filter((booking) => {
-      if (
-        normalizeBookingStatus(booking.status) !== "completed" ||
-        !booking.completedAt
-      )
-        return false;
+      if (booking.status !== "completed" || !booking.completedAt) return false;
+
       const completedDate = new Date(booking.completedAt);
+
       return (
         completedDate.getMonth() === currentMonth &&
         completedDate.getFullYear() === currentYear
@@ -434,26 +505,34 @@ export const getStats = query({
 
     return {
       totalBookings: allBookings.length,
+
       pendingBookings: allBookings.filter(
-        (b) => normalizeBookingStatus(b.status) === "pending",
+        (booking) => booking.status === "pending",
       ).length,
       confirmedBookings: allBookings.filter(
-        (b) => normalizeBookingStatus(b.status) === "confirmed",
+        (booking) => booking.status === "confirmed",
       ).length,
       activeBookings: allBookings.filter(
-        (b) => normalizeBookingStatus(b.status) === "active",
+        (booking) => booking.status === "active",
       ).length,
       completedBookings: allBookings.filter(
-        (b) => normalizeBookingStatus(b.status) === "completed",
+        (booking) => booking.status === "completed",
       ).length,
       cancelledBookings: allBookings.filter(
-        (b) => normalizeBookingStatus(b.status) === "cancelled",
+        (booking) => booking.status === "cancelled",
       ).length,
+
       revenueThisMonth,
-      totalCars: allCars.length,
-      availableCars: allCars.filter((c) => c.status === "Available").length,
-      bookedCars: allCars.filter((c) => c.status === "Booked").length,
-      maintenanceCars: allCars.filter((c) => c.status === "Maintenance").length,
+
+      totalCars: activeCars.length,
+      availableCars: activeCars.filter((car) => car.status === "available")
+        .length,
+      bookedCars: activeCars.filter((car) => car.status === "booked").length,
+      maintenanceCars: activeCars.filter((car) => car.status === "maintenance")
+        .length,
+      unavailableCars: activeCars.filter((car) => car.status === "unavailable")
+        .length,
+      featuredCars: activeCars.filter((car) => car.isFeatured).length,
     };
   },
 });

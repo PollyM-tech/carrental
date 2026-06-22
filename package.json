@@ -13,6 +13,7 @@
     "@convex-dev/workos": "^0.0.3",
     "@workos-inc/authkit-nextjs": "^4.1.1",
     "convex": "^1.41.0",
+    "framer-motion": "^12.40.0",
     "lucide-react": "^1.21.0",
     "next": "16.2.9",
     "react": "19.2.4",
