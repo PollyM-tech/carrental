@@ -1,12 +1,60 @@
 "use client";
 
-import { ConvexProvider, ConvexReactClient } from "convex/react";
-import { ReactNode } from "react";
-
-const convex = new ConvexReactClient(
-  process.env.NEXT_PUBLIC_CONVEX_URL as string,
-);
+import { ReactNode, useCallback, useState } from "react";
+import { ConvexProviderWithAuth, ConvexReactClient } from "convex/react";
+import {
+  AuthKitProvider,
+  useAccessToken,
+  useAuth,
+} from "@workos-inc/authkit-nextjs/components";
 
 export function ConvexClientProvider({ children }: { children: ReactNode }) {
-  return <ConvexProvider client={convex}>{children}</ConvexProvider>;
+  const [convex] = useState(() => {
+    return new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+  });
+
+  return (
+    <AuthKitProvider>
+      <ConvexProviderWithAuth client={convex} useAuth={useAuthFromAuthKit}>
+        {children}
+      </ConvexProviderWithAuth>
+    </AuthKitProvider>
+  );
+}
+
+function useAuthFromAuthKit() {
+  const { user, loading: isLoading } = useAuth();
+  const { getAccessToken, refresh } = useAccessToken();
+
+  const isAuthenticated = !!user;
+
+  const fetchAccessToken = useCallback(
+    async ({
+      forceRefreshToken,
+    }: {
+      forceRefreshToken?: boolean;
+    } = {}): Promise<string | null> => {
+      if (!user) {
+        return null;
+      }
+
+      try {
+        if (forceRefreshToken) {
+          return (await refresh()) ?? null;
+        }
+
+        return (await getAccessToken()) ?? null;
+      } catch (error) {
+        console.error("Failed to get WorkOS access token:", error);
+        return null;
+      }
+    },
+    [user, refresh, getAccessToken],
+  );
+
+  return {
+    isLoading,
+    isAuthenticated,
+    fetchAccessToken,
+  };
 }
