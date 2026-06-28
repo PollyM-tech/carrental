@@ -8,15 +8,11 @@
  * @module
  */
 
-import type * as auth from "../auth.js";
-import type * as authTest from "../authTest.js";
+import type * as admin from "../admin.js";
 import type * as bookings from "../bookings.js";
 import type * as cars from "../cars.js";
-import type * as http from "../http.js";
-import type * as lib_auth from "../lib/auth.js";
+import type * as lib_adminAuth from "../lib/adminAuth.js";
 import type * as settings from "../settings.js";
-import type * as users from "../users.js";
-import type * as webhooks from "../webhooks.js";
 
 import type {
   ApiFromModules,
@@ -25,15 +21,11 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  auth: typeof auth;
-  authTest: typeof authTest;
+  admin: typeof admin;
   bookings: typeof bookings;
   cars: typeof cars;
-  http: typeof http;
-  "lib/auth": typeof lib_auth;
+  "lib/adminAuth": typeof lib_adminAuth;
   settings: typeof settings;
-  users: typeof users;
-  webhooks: typeof webhooks;
 }>;
 
 /**

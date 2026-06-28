@@ -4,12 +4,10 @@ import { v } from "convex/values";
 
 export default defineSchema({
   // ─── USERS ────────────────────────────────────────────────────────────────
-  // Synced from WorkOS via webhook. Never created directly by the client.
+  // Kept for possible future customer accounts.
+  // The current admin login system uses adminSessions instead.
   users: defineTable({
-    workosUserId: v.string(),
     email: v.string(),
-
-    workosOrganizationId: v.optional(v.string()),
 
     role: v.union(
       v.literal("platform_admin"),
@@ -26,13 +24,20 @@ export default defineSchema({
 
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
-    lastSyncedAt: v.optional(v.number()),
     deletedAt: v.optional(v.number()),
   })
-    .index("by_workosUserId", ["workosUserId"])
     .index("by_email", ["email"])
-    .index("by_workosOrganizationId", ["workosOrganizationId"])
     .index("by_role", ["role"]),
+
+  // ─── ADMIN SESSIONS ──────────────────────────────────────────────────────
+  // Used for simple password-based admin login.
+  // The frontend stores the token in localStorage and sends it to protected
+  // admin Convex functions.
+  adminSessions: defineTable({
+    token: v.string(),
+    expiresAt: v.number(),
+    createdAt: v.number(),
+  }).index("by_token", ["token"]),
 
   // ─── CARS ─────────────────────────────────────────────────────────────────
   // Cars are managed by admins from the dashboard.
@@ -70,7 +75,7 @@ export default defineSchema({
     rating: v.optional(v.number()),
     reviewCount: v.optional(v.number()),
 
-    // Optional fleet/admin details. Useful later for real fleet tracking.
+    // Optional fleet/admin details.
     brand: v.optional(v.string()),
     model: v.optional(v.string()),
     year: v.optional(v.number()),
@@ -119,13 +124,12 @@ export default defineSchema({
     totalDays: v.optional(v.number()),
     totalAmount: v.optional(v.number()),
 
-    // Customer snapshot. This keeps the booking readable even if the user
-    // later changes their account details.
+    // Customer snapshot.
     customerName: v.string(),
     customerEmail: v.optional(v.string()),
     customerPhone: v.optional(v.string()),
 
-    // Car snapshot. Useful for WhatsApp bookings and admin review.
+    // Car snapshot.
     carName: v.optional(v.string()),
 
     pickupLocation: v.optional(v.string()),
@@ -136,7 +140,7 @@ export default defineSchema({
 
     cancelReason: v.optional(v.string()),
 
-    // Audit fields
+    // Admin audit fields.
     confirmedBy: v.optional(v.id("users")),
     cancelledBy: v.optional(v.id("users")),
 

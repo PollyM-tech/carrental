@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation } from "convex/react";
-import { X } from "lucide-react";
+import { X, ImagePlus } from "lucide-react";
 
 import { api } from "../../../convex/_generated/api";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
@@ -21,12 +21,25 @@ const statusOptions: { label: string; value: CarStatus }[] = [
   { label: "Unavailable", value: "unavailable" },
 ];
 
+function getAdminToken() {
+  const token = localStorage.getItem("mobri_admin_token");
+
+  if (!token) {
+    throw new Error("Admin session missing. Please log in again.");
+  }
+
+  return token;
+}
+
 export default function CarForm({ car, onClose }: CarFormProps) {
   const addCar = useMutation(api.cars.addCar);
   const updateCar = useMutation(api.cars.updateCar);
+  const generateUploadUrl = useMutation(api.cars.generateUploadUrl);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     name: car?.name ?? "",
@@ -48,6 +61,52 @@ export default function CarForm({ car, onClose }: CarFormProps) {
     reviewCount: car?.reviewCount ? String(car.reviewCount) : "",
   });
 
+  function handleImageSelect(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setErrorMessage("Please select a valid image file.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMessage("Image must be smaller than 5MB.");
+      return;
+    }
+
+    setSelectedImageFile(file);
+    setImagePreviewUrl(URL.createObjectURL(file));
+    setErrorMessage("");
+  }
+
+  async function uploadSelectedImage(adminToken: string) {
+    if (!selectedImageFile) {
+      return car?.imageStorageId ?? undefined;
+    }
+
+    const uploadUrl = await generateUploadUrl({ adminToken });
+
+    const uploadResult = await fetch(uploadUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": selectedImageFile.type,
+      },
+      body: selectedImageFile,
+    });
+
+    if (!uploadResult.ok) {
+      throw new Error("Image upload failed. Please try again.");
+    }
+
+    const { storageId } = (await uploadResult.json()) as {
+      storageId: Id<"_storage">;
+    };
+
+    return storageId;
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -55,6 +114,9 @@ export default function CarForm({ car, onClose }: CarFormProps) {
     setErrorMessage("");
 
     try {
+      const adminToken = getAdminToken();
+      const imageStorageId = await uploadSelectedImage(adminToken);
+
       const payload = {
         name: form.name.trim(),
         brand: form.brand.trim() || undefined,
@@ -64,6 +126,7 @@ export default function CarForm({ car, onClose }: CarFormProps) {
         location: form.location.trim() || undefined,
         category: form.category.trim(),
         pricePerDay: Number(form.pricePerDay),
+        imageStorageId,
         imageUrl: form.imageUrl.trim() || undefined,
         seats: Number(form.seats),
         transmission: form.transmission.trim(),
@@ -87,13 +150,25 @@ export default function CarForm({ car, onClose }: CarFormProps) {
         throw new Error("Seats must be greater than 0.");
       }
 
+      if (payload.year && payload.year < 1980) {
+        throw new Error("Please enter a valid vehicle year.");
+      }
+
+      if (payload.rating && (payload.rating < 0 || payload.rating > 5)) {
+        throw new Error("Rating must be between 0 and 5.");
+      }
+
       if (car) {
         await updateCar({
-          id: car._id as Id<"cars">,
+          adminToken,
+          id: car._id,
           ...payload,
         });
       } else {
-        await addCar(payload);
+        await addCar({
+          adminToken,
+          ...payload,
+        });
       }
 
       onClose();
@@ -108,34 +183,106 @@ export default function CarForm({ car, onClose }: CarFormProps) {
     }
   }
 
+  const existingImagePreview = imagePreviewUrl || form.imageUrl || null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 py-8 backdrop-blur-sm">
-      <div className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-3xl bg-white shadow-2xl">
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-5">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/60 px-3 py-4 backdrop-blur-sm sm:px-4 sm:py-8">
+      <div className="w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl sm:rounded-3xl">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-4 py-4 sm:px-6 sm:py-5">
           <div>
-            <h2 className="text-xl font-black text-slate-950">
+            <h2 className="text-lg font-black text-slate-950 sm:text-xl">
               {car ? "Edit Car" : "Add New Car"}
             </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Manage vehicle details, status, and featured visibility.
+
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              Upload a car photo and manage vehicle details.
             </p>
           </div>
 
           <button
             type="button"
             onClick={onClose}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600 transition hover:bg-orange-100"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600 transition hover:bg-orange-100"
+            aria-label="Close form"
           >
             <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6">
+        <form
+          onSubmit={handleSubmit}
+          className="max-h-[calc(100vh-130px)] overflow-y-auto p-4 sm:p-6"
+        >
           {errorMessage && (
             <div className="mb-5 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm font-bold text-orange-700">
               {errorMessage}
             </div>
           )}
+
+          <div className="mb-6 rounded-3xl border border-slate-200 bg-slate-50 p-4">
+            <p className="mb-3 text-xs font-black uppercase tracking-[0.08em] text-slate-700">
+              Car Image
+            </p>
+
+            <div className="grid gap-4 md:grid-cols-[240px_1fr] md:items-center">
+              <div className="flex h-40 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                {existingImagePreview ? (
+                  <img
+                    src={existingImagePreview}
+                    alt="Selected car preview"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="text-center text-slate-400">
+                    <ImagePlus className="mx-auto mb-2" size={34} />
+                    <p className="text-sm font-bold">No image selected</p>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-orange-600 px-5 py-3 text-sm font-black text-white transition hover:bg-orange-700">
+                  <ImagePlus size={18} />
+                  Choose Image
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    className="hidden"
+                  />
+                </label>
+
+                <p className="mt-3 text-sm leading-6 text-slate-500">
+                  Upload a clear car photo from the computer. JPG, PNG, or WebP
+                  is okay. Maximum size is 5MB.
+                </p>
+
+                {selectedImageFile && (
+                  <p className="mt-2 text-sm font-bold text-orange-600">
+                    Selected: {selectedImageFile.name}
+                  </p>
+                )}
+
+                <div className="mt-4">
+                  <label className="block">
+                    <span className="mb-2 block text-xs font-black uppercase tracking-[0.08em] text-slate-500">
+                      Optional Image URL
+                    </span>
+
+                    <input
+                      type="text"
+                      value={form.imageUrl}
+                      placeholder="Optional fallback, e.g. /lexus.jpeg"
+                      onChange={(event) =>
+                        setForm({ ...form, imageUrl: event.target.value })
+                      }
+                      className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-950 outline-none transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <div className="grid gap-5 md:grid-cols-2">
             <Input
@@ -197,13 +344,6 @@ export default function CarForm({ car, onClose }: CarFormProps) {
             />
 
             <Input
-              label="Image URL"
-              value={form.imageUrl}
-              placeholder="e.g. /lexus.jpeg"
-              onChange={(value) => setForm({ ...form, imageUrl: value })}
-            />
-
-            <Input
               label="Seats"
               type="number"
               value={form.seats}
@@ -229,6 +369,7 @@ export default function CarForm({ car, onClose }: CarFormProps) {
               <span className="mb-2 block text-xs font-black uppercase tracking-[0.08em] text-slate-700">
                 Status
               </span>
+
               <select
                 value={form.status}
                 onChange={(event) =>
@@ -268,6 +409,7 @@ export default function CarForm({ car, onClose }: CarFormProps) {
             <span className="mb-2 block text-xs font-black uppercase tracking-[0.08em] text-slate-700">
               Description
             </span>
+
             <textarea
               value={form.description}
               onChange={(event) =>
@@ -279,7 +421,7 @@ export default function CarForm({ car, onClose }: CarFormProps) {
             />
           </label>
 
-          <label className="mt-5 flex w-fit cursor-pointer items-center gap-3 rounded-xl border border-orange-100 bg-orange-50 px-4 py-3 text-sm font-bold text-orange-700">
+          <label className="mt-5 flex w-full cursor-pointer items-center gap-3 rounded-xl border border-orange-100 bg-orange-50 px-4 py-3 text-sm font-bold text-orange-700 sm:w-fit">
             <input
               type="checkbox"
               checked={form.isFeatured}
@@ -291,7 +433,7 @@ export default function CarForm({ car, onClose }: CarFormProps) {
             Feature this car on homepage
           </label>
 
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
+          <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <button
               type="button"
               onClick={onClose}
@@ -305,7 +447,13 @@ export default function CarForm({ car, onClose }: CarFormProps) {
               disabled={isSubmitting}
               className="rounded-xl bg-orange-600 px-6 py-3 text-sm font-black text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:bg-slate-300"
             >
-              {isSubmitting ? "Saving..." : car ? "Update Car" : "Add Car"}
+              {isSubmitting
+                ? selectedImageFile
+                  ? "Uploading..."
+                  : "Saving..."
+                : car
+                  ? "Update Car"
+                  : "Add Car"}
             </button>
           </div>
         </form>
@@ -332,6 +480,7 @@ function Input({
       <span className="mb-2 block text-xs font-black uppercase tracking-[0.08em] text-slate-700">
         {label}
       </span>
+
       <input
         type={type}
         value={value}

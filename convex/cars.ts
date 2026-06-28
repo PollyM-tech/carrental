@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query, type QueryCtx } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
-import { requireRole } from "./lib/auth";
+import { requireAdminSession } from "./lib/adminAuth";
 
 const carStatusValidator = v.union(
   v.literal("available"),
@@ -21,22 +21,30 @@ async function withDisplayImageUrl(ctx: QueryCtx, car: Doc<"cars">) {
   };
 }
 
+/**
+ * Admin generates upload URL for car images.
+ */
 export const generateUploadUrl = mutation({
-  args: {},
-  handler: async (ctx) => {
-    await requireRole(ctx, ["platform_admin"]);
+  args: {
+    adminToken: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await requireAdminSession(ctx, args.adminToken);
+
     return await ctx.storage.generateUploadUrl();
   },
 });
 
 /**
- * Admin/staff list.
+ * Admin list.
  * Shows all non-deleted cars, including maintenance, booked, and unavailable.
  */
 export const listCars = query({
-  args: {},
-  handler: async (ctx) => {
-    await requireRole(ctx, ["platform_admin", "staff"]);
+  args: {
+    adminToken: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await requireAdminSession(ctx, args.adminToken);
 
     const cars = (await ctx.db.query("cars").order("desc").collect()).filter(
       (car) => !car.deletedAt,
@@ -89,6 +97,8 @@ export const listFeaturedCars = query({
  */
 export const addCar = mutation({
   args: {
+    adminToken: v.string(),
+
     name: v.string(),
     category: v.string(),
     pricePerDay: v.number(),
@@ -115,10 +125,12 @@ export const addCar = mutation({
     location: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireRole(ctx, ["platform_admin"]);
+    await requireAdminSession(ctx, args.adminToken);
+
+    const { adminToken, ...carData } = args;
 
     return await ctx.db.insert("cars", {
-      ...args,
+      ...carData,
       createdAt: Date.now(),
     });
   },
@@ -129,6 +141,8 @@ export const addCar = mutation({
  */
 export const updateCar = mutation({
   args: {
+    adminToken: v.string(),
+
     id: v.id("cars"),
 
     name: v.string(),
@@ -157,9 +171,9 @@ export const updateCar = mutation({
     location: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireRole(ctx, ["platform_admin"]);
+    await requireAdminSession(ctx, args.adminToken);
 
-    const { id, ...updates } = args;
+    const { adminToken, id, ...updates } = args;
 
     await ctx.db.patch(id, {
       ...updates,
@@ -171,15 +185,16 @@ export const updateCar = mutation({
 });
 
 /**
- * Admin/staff can quickly change availability.
+ * Admin can quickly change car status.
  */
 export const updateCarStatus = mutation({
   args: {
+    adminToken: v.string(),
     id: v.id("cars"),
     status: carStatusValidator,
   },
   handler: async (ctx, args) => {
-    await requireRole(ctx, ["platform_admin", "staff"]);
+    await requireAdminSession(ctx, args.adminToken);
 
     await ctx.db.patch(args.id, {
       status: args.status,
@@ -196,11 +211,12 @@ export const updateCarStatus = mutation({
  */
 export const toggleFeatured = mutation({
   args: {
+    adminToken: v.string(),
     id: v.id("cars"),
     isFeatured: v.boolean(),
   },
   handler: async (ctx, args) => {
-    await requireRole(ctx, ["platform_admin"]);
+    await requireAdminSession(ctx, args.adminToken);
 
     await ctx.db.patch(args.id, {
       isFeatured: args.isFeatured,
@@ -217,10 +233,11 @@ export const toggleFeatured = mutation({
  */
 export const deleteCar = mutation({
   args: {
+    adminToken: v.string(),
     id: v.id("cars"),
   },
   handler: async (ctx, args) => {
-    await requireRole(ctx, ["platform_admin"]);
+    await requireAdminSession(ctx, args.adminToken);
 
     await ctx.db.patch(args.id, {
       status: "unavailable",

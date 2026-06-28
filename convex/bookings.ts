@@ -1,7 +1,7 @@
 import { ConvexError, v } from "convex/values";
 import { mutation, query, type MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
-import { requireAuth, requireRole } from "./lib/auth";
+import { requireAdminSession } from "./lib/adminAuth";
 
 const bookingStatusValidator = v.union(
   v.literal("pending"),
@@ -99,7 +99,7 @@ async function checkCarBookingConflict(
  *
  * Flow:
  * 1. Customer fills the public booking form.
- * 2. Booking is saved to Convex as "pending".
+ * 2. Booking is saved to Convex as pending.
  * 3. Frontend redirects customer to WhatsApp with the same booking details.
  */
 export const create = mutation({
@@ -161,7 +161,7 @@ export const create = mutation({
       totalAmount = totalDays ? totalDays * car.pricePerDay : undefined;
     }
 
-    const bookingId = await ctx.db.insert("bookings", {
+    return await ctx.db.insert("bookings", {
       carId: args.carId,
       carName,
 
@@ -183,55 +183,20 @@ export const create = mutation({
 
       createdAt: Date.now(),
     });
-
-    return bookingId;
   },
 });
 
 /**
- * Logged-in customer bookings.
- * Optional for now, but useful if customer accounts are added later.
- */
-export const myBookings = query({
-  args: {},
-
-  handler: async (ctx) => {
-    const user = await requireRole(ctx, ["customer"]);
-
-    const bookings = await ctx.db
-      .query("bookings")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
-      .order("desc")
-      .collect();
-
-    return await Promise.all(
-      bookings.map(async (booking) => {
-        const car = booking.carId ? await ctx.db.get(booking.carId) : null;
-
-        const uploadedImageUrl = car?.imageStorageId
-          ? await ctx.storage.getUrl(car.imageStorageId)
-          : null;
-
-        return {
-          ...booking,
-          carName: car?.name ?? booking.carName,
-          displayImageUrl: uploadedImageUrl ?? car?.imageUrl ?? null,
-        };
-      }),
-    );
-  },
-});
-
-/**
- * Admin/staff booking list.
+ * Admin booking list.
  */
 export const listAll = query({
   args: {
+    adminToken: v.string(),
     status: v.optional(bookingStatusValidator),
   },
 
   handler: async (ctx, args) => {
-    await requireRole(ctx, ["platform_admin", "staff"]);
+    await requireAdminSession(ctx, args.adminToken);
 
     const bookings = args.status
       ? await ctx.db
@@ -260,24 +225,21 @@ export const listAll = query({
 });
 
 /**
- * Admin/customer booking details.
+ * Admin booking details.
  */
 export const getById = query({
   args: {
+    adminToken: v.string(),
     bookingId: v.id("bookings"),
   },
 
   handler: async (ctx, args) => {
-    const user = await requireAuth(ctx);
+    await requireAdminSession(ctx, args.adminToken);
 
     const booking = await ctx.db.get(args.bookingId);
 
     if (!booking) {
       throw new ConvexError("This booking could not be found.");
-    }
-
-    if (user.role === "customer" && booking.userId !== user._id) {
-      throw new ConvexError("Unauthorized");
     }
 
     const car = booking.carId ? await ctx.db.get(booking.carId) : null;
@@ -302,16 +264,17 @@ export const getById = query({
 });
 
 /**
- * Admin/staff confirms a pending booking.
+ * Admin confirms a pending booking.
  * When confirmed, linked car becomes booked.
  */
 export const confirm = mutation({
   args: {
+    adminToken: v.string(),
     bookingId: v.id("bookings"),
   },
 
   handler: async (ctx, args) => {
-    const user = await requireRole(ctx, ["platform_admin", "staff"]);
+    await requireAdminSession(ctx, args.adminToken);
 
     const booking = await ctx.db.get(args.bookingId);
 
@@ -325,7 +288,6 @@ export const confirm = mutation({
 
     await ctx.db.patch(args.bookingId, {
       status: "confirmed",
-      confirmedBy: user._id,
       confirmedAt: Date.now(),
       updatedAt: Date.now(),
     });
@@ -342,15 +304,16 @@ export const confirm = mutation({
 });
 
 /**
- * Admin/staff marks a confirmed booking as active.
+ * Admin marks a confirmed booking as active.
  */
 export const activate = mutation({
   args: {
+    adminToken: v.string(),
     bookingId: v.id("bookings"),
   },
 
   handler: async (ctx, args) => {
-    await requireRole(ctx, ["platform_admin", "staff"]);
+    await requireAdminSession(ctx, args.adminToken);
 
     const booking = await ctx.db.get(args.bookingId);
 
@@ -384,12 +347,13 @@ export const activate = mutation({
  */
 export const cancel = mutation({
   args: {
+    adminToken: v.string(),
     bookingId: v.id("bookings"),
     cancelReason: v.string(),
   },
 
   handler: async (ctx, args) => {
-    const user = await requireRole(ctx, ["platform_admin"]);
+    await requireAdminSession(ctx, args.adminToken);
 
     const booking = await ctx.db.get(args.bookingId);
 
@@ -404,7 +368,6 @@ export const cancel = mutation({
     await ctx.db.patch(args.bookingId, {
       status: "cancelled",
       cancelReason: args.cancelReason,
-      cancelledBy: user._id,
       cancelledAt: Date.now(),
       updatedAt: Date.now(),
     });
@@ -425,16 +388,17 @@ export const cancel = mutation({
 });
 
 /**
- * Admin/staff completes a booking.
+ * Admin completes a booking.
  * When completed, linked car becomes available again.
  */
 export const complete = mutation({
   args: {
+    adminToken: v.string(),
     bookingId: v.id("bookings"),
   },
 
   handler: async (ctx, args) => {
-    await requireRole(ctx, ["platform_admin", "staff"]);
+    await requireAdminSession(ctx, args.adminToken);
 
     const booking = await ctx.db.get(args.bookingId);
 
@@ -473,10 +437,12 @@ export const complete = mutation({
  * Admin dashboard stats.
  */
 export const getStats = query({
-  args: {},
+  args: {
+    adminToken: v.string(),
+  },
 
-  handler: async (ctx) => {
-    await requireRole(ctx, ["platform_admin"]);
+  handler: async (ctx, args) => {
+    await requireAdminSession(ctx, args.adminToken);
 
     const allBookings = await ctx.db.query("bookings").collect();
     const allCars = await ctx.db.query("cars").collect();

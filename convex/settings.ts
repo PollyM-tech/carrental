@@ -1,6 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { requireRole } from "./lib/auth";
+import { requireAdminSession } from "./lib/adminAuth";
 
 export const getSettings = query({
   args: {},
@@ -12,6 +12,8 @@ export const getSettings = query({
 
 export const updateSettings = mutation({
   args: {
+    adminToken: v.string(),
+
     businessName: v.string(),
     whatsappNumber: v.string(),
     phoneNumber: v.optional(v.string()),
@@ -19,19 +21,21 @@ export const updateSettings = mutation({
     location: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireRole(ctx, ["platform_admin"]);
+    await requireAdminSession(ctx, args.adminToken);
+
+    const { adminToken, ...settingsData } = args;
 
     const existing = await ctx.db.query("settings").first();
 
     if (!existing) {
       return await ctx.db.insert("settings", {
-        ...args,
+        ...settingsData,
         createdAt: Date.now(),
       });
     }
 
     await ctx.db.patch(existing._id, {
-      ...args,
+      ...settingsData,
       updatedAt: Date.now(),
     });
 
