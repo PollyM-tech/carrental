@@ -3,6 +3,7 @@ import Hero from "@/components/home/Hero";
 import AboutUs from "@/components/home/AboutUs";
 import BookingForm from "@/components/home/BookingForm";
 import WhatsAppButton from "@/components/shared/WhatsAppButton";
+import FeaturedCars from "@/components/home/FeaturedCars";
 import Footer from "@/components/layout/Footer";
 
 export default function Home() {
@@ -13,6 +14,7 @@ export default function Home() {
       <main>
         <Hero />
         <AboutUs />
+        <FeaturedCars />
         <BookingForm />
       </main>
 
