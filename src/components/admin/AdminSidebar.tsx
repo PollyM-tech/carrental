@@ -129,7 +129,7 @@ export default function AdminSidebar({
                 </div>
 
                 <div>
-                  <p className="text-sm font-black">MoBri Car Hire</p>
+                  <p className="text-sm font-black">Back to website</p>
                   <p className="mt-1 text-xs font-semibold text-white/55">
                     Nairobi, Kenya
                   </p>

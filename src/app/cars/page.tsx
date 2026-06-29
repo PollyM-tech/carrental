@@ -209,14 +209,14 @@ export default function CarsPage() {
 
                         <div className="mt-5 grid grid-cols-[1fr_auto] gap-3">
                           <Link
-                            href={`/contact?car=${encodeURIComponent(car.name)}`}
+                            href={`/cars/${car._id}`}
                             className="inline-flex items-center justify-center rounded-xl bg-[#06142A] px-4 py-3 text-sm font-black text-white transition hover:bg-orange-600"
                           >
-                            Book Now
+                            View Details
                           </Link>
 
                           <Link
-                            href={`/contact?car=${encodeURIComponent(car.name)}`}
+                            href={`/contact?carId=${car._id}`}
                             className="inline-flex h-12 w-12 items-center justify-center rounded-xl border border-slate-300 text-slate-950 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-700"
                             aria-label={`Book ${car.name}`}
                           >

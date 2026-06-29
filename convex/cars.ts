@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { mutation, query, type QueryCtx } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
 import { requireAdminSession } from "./lib/adminAuth";
@@ -69,6 +69,29 @@ export const listPublicCars = query({
     ).filter((car) => !car.deletedAt);
 
     return await Promise.all(cars.map((car) => withDisplayImageUrl(ctx, car)));
+  },
+});
+
+/**
+ * Public single car details page.
+ * Used by /cars/[carId].
+ */
+export const getPublicCarById = query({
+  args: {
+    carId: v.id("cars"),
+  },
+  handler: async (ctx, args) => {
+    const car = await ctx.db.get(args.carId);
+
+    if (!car || car.deletedAt) {
+      throw new ConvexError("This car could not be found.");
+    }
+
+    if (car.status !== "available" && car.status !== "booked") {
+      throw new ConvexError("This car is not currently available to view.");
+    }
+
+    return await withDisplayImageUrl(ctx, car);
   },
 });
 
