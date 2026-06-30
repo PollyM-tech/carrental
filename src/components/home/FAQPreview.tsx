@@ -60,31 +60,29 @@ export default function FAQPreview() {
   const [openIndex, setOpenIndex] = useState(0);
 
   return (
-    <section className="bg-[#f4f7fb] px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
-      <div className="mx-auto max-w-7xl">
-        <div className="mx-auto max-w-4xl text-center">
-          <p className="text-sm font-black uppercase tracking-[0.18em] text-[#FF6B00]">
+    <section className="bg-[#f6f8fb] px-4 py-20">
+      <div className="mx-auto max-w-[1120px]">
+        <div className="text-center">
+          <span className="inline-flex rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-orange-600">
             FAQs
-          </p>
+          </span>
 
-          <div className="mx-auto mt-3 h-0.5 w-12 rounded-full bg-[#FF6B00]" />
-
-          <h2 className="mt-5 text-4xl font-black tracking-[-0.05em] text-[#06142A] sm:text-5xl lg:text-6xl">
+          <h2 className="mt-4 text-3xl font-black tracking-[-0.04em] text-[#0A1628] sm:text-4xl md:text-5xl">
             Frequently Asked Questions
           </h2>
 
-          <p className="mx-auto mt-5 max-w-2xl text-base font-medium leading-8 text-slate-600 sm:text-lg">
-            Find answers to common questions about our car hire services,
-            bookings, and customer support.
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-600">
+            Find quick answers about our car hire services, booking process,
+            customer support, and rental requirements.
           </p>
         </div>
 
-        <div className="mt-12 grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
-          <aside className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10">
+        <div className="mt-10 grid gap-8 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
+          <aside className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_28px_80px_rgba(10,22,40,0.08)]">
             <div className="relative h-64 bg-slate-200">
               <Image
                 src="/lexus.jpeg"
-                alt="MoBri Car Hire support"
+                alt="MoBri Car Hire customer support"
                 fill
                 sizes="(max-width: 1024px) 100vw, 40vw"
                 className="object-cover"
@@ -92,18 +90,20 @@ export default function FAQPreview() {
             </div>
 
             <div className="bg-[#06142A] p-6 text-white sm:p-8">
-              <h3 className="text-2xl font-black tracking-[-0.04em]">
+              <span className="inline-flex rounded-full border border-orange-300/30 bg-orange-500/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-orange-300">
+                Need Help?
+              </span>
+
+              <h3 className="mt-4 text-2xl font-black tracking-[-0.04em]">
                 Still have questions?
               </h3>
 
-              <div className="mt-3 h-0.5 w-12 rounded-full bg-[#FF6B00]" />
-
-              <p className="mt-5 text-sm font-medium leading-7 text-white/70">
-                Our team is ready to help with car availability, booking
-                requests, pickup locations, and rental support.
+              <p className="mt-3 text-sm leading-6 text-white/75">
+                Our team can help with car availability, booking requests,
+                pickup locations, and rental support.
               </p>
 
-              <div className="mt-6 space-y-4">
+              <div className="mt-6 space-y-3">
                 <ContactLine
                   icon={Phone}
                   label="Call Us"
@@ -123,10 +123,10 @@ export default function FAQPreview() {
                 />
               </div>
 
-              <div className="mt-7 flex flex-col gap-3 sm:flex-row lg:flex-col">
+              <div className="mt-7 flex flex-col gap-3">
                 <Link
                   href="/contact"
-                  className="inline-flex items-center justify-center gap-3 rounded-xl bg-[#FF6B00] px-6 py-4 text-sm font-black text-white shadow-lg shadow-orange-600/20 transition hover:bg-orange-700"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-600 px-6 py-4 text-sm font-black text-white shadow-[0_18px_35px_rgba(234,88,12,0.28)] transition hover:-translate-y-1 hover:bg-orange-700"
                 >
                   Contact Us
                   <ArrowRight size={18} />
@@ -134,7 +134,7 @@ export default function FAQPreview() {
 
                 <Link
                   href="/faq"
-                  className="inline-flex items-center justify-center gap-3 rounded-xl border border-white/15 bg-white/10 px-6 py-4 text-sm font-black text-white transition hover:bg-white/15"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/10 px-6 py-4 text-sm font-black text-white transition hover:bg-white/15"
                 >
                   View All FAQs
                   <ArrowRight size={18} />
@@ -143,7 +143,7 @@ export default function FAQPreview() {
             </div>
           </aside>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             {faqs.map((faq, index) => {
               const Icon = faq.icon;
               const isOpen = openIndex === index;
@@ -151,33 +151,34 @@ export default function FAQPreview() {
               return (
                 <article
                   key={faq.question}
-                  className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md sm:p-6"
+                  className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-orange-500 hover:shadow-xl sm:p-5"
                 >
                   <button
                     type="button"
                     onClick={() => setOpenIndex(isOpen ? -1 : index)}
-                    className="flex w-full items-start gap-4 text-left"
+                    className="flex w-full items-start gap-3 text-left"
+                    aria-expanded={isOpen}
                   >
-                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-orange-50 text-[#FF6B00]">
-                      <Icon size={24} />
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+                      <Icon size={18} />
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <h3 className="text-lg font-black tracking-[-0.03em] text-[#06142A] sm:text-xl">
+                      <h3 className="text-sm font-black leading-6 text-[#0A1628]">
                         {faq.question}
                       </h3>
 
                       {isOpen && (
-                        <p className="mt-3 text-sm font-medium leading-7 text-slate-600">
+                        <p className="mt-2 text-sm leading-6 text-slate-600">
                           {faq.answer}
                         </p>
                       )}
                     </div>
 
                     <Plus
-                      size={24}
-                      className={`mt-3 shrink-0 text-[#06142A] transition ${
-                        isOpen ? "rotate-45" : ""
+                      size={18}
+                      className={`mt-1 shrink-0 text-[#0A1628] transition ${
+                        isOpen ? "rotate-45 text-orange-600" : ""
                       }`}
                     />
                   </button>
@@ -185,10 +186,10 @@ export default function FAQPreview() {
               );
             })}
 
-            <div className="pt-3">
+            <div className="pt-4">
               <Link
                 href="/faq"
-                className="inline-flex w-full items-center justify-center gap-3 rounded-xl bg-[#06142A] px-6 py-4 text-sm font-black text-white transition hover:bg-[#FF6B00] sm:w-fit"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#06142A] px-6 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-orange-600 sm:w-fit"
               >
                 View Full FAQ Page
                 <ArrowRight size={18} />
@@ -211,14 +212,16 @@ function ContactLine({
   value: string;
 }) {
   return (
-    <div className="flex items-center gap-4">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/10 text-[#FF6B00]">
-        <Icon size={20} />
+    <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-orange-400">
+        <Icon size={18} />
       </div>
 
-      <div>
-        <p className="text-xs font-semibold text-white/55">{label}</p>
-        <p className="mt-1 text-sm font-black">{value}</p>
+      <div className="min-w-0">
+        <p className="text-[11px] font-black uppercase tracking-[0.08em] text-white/50">
+          {label}
+        </p>
+        <p className="mt-1 truncate text-sm font-black text-white">{value}</p>
       </div>
     </div>
   );

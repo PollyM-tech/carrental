@@ -9,7 +9,6 @@ import {
   RefreshCcw,
   ShieldCheck,
   Star,
-  Users,
 } from "lucide-react";
 
 const benefits = [
@@ -37,70 +36,70 @@ const benefits = [
 
 export default function CTASection() {
   return (
-    <section className="bg-[#f4f7fb] px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
-      <div className="mx-auto max-w-7xl">
-        <div className="relative overflow-hidden rounded-3xl bg-[#06142A] shadow-2xl shadow-slate-900/10">
+    <section className="bg-[#f6f8fb] px-4 py-20">
+      <div className="mx-auto max-w-[1120px]">
+        <div className="relative overflow-hidden rounded-3xl bg-[#06142A] shadow-[0_28px_80px_rgba(10,22,40,0.12)]">
           <Image
             src="/mercedes.jpg"
             alt="MoBri Car Hire vehicle"
             fill
-            sizes="100vw"
-            className="object-cover opacity-45"
+            sizes="(max-width: 768px) 100vw, 1120px"
+            className="object-cover opacity-35"
           />
 
-          <div className="absolute inset-0 bg-gradient-to-r from-[#06142A] via-[#06142A]/90 to-[#06142A]/30" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#06142A] via-[#06142A]/90 to-[#06142A]/40" />
 
-          <div className="relative px-6 py-14 text-white sm:px-10 lg:px-14 lg:py-20">
-            <p className="flex items-center gap-3 text-sm font-black uppercase tracking-[0.18em] text-[#FF6B00]">
-              <span className="h-0.5 w-10 rounded-full bg-[#FF6B00]" />
+          <div className="relative px-6 py-14 text-white sm:px-8 md:px-10 lg:px-12">
+            <span className="inline-flex rounded-full border border-orange-300/30 bg-orange-500/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-orange-300">
               Ready to hit the road?
-            </p>
+            </span>
 
-            <h2 className="mt-6 max-w-3xl text-4xl font-black tracking-[-0.05em] sm:text-5xl lg:text-6xl">
+            <h2 className="mt-4 max-w-2xl text-3xl font-black tracking-[-0.04em] sm:text-4xl md:text-5xl">
               Ready to Start Your Journey?
             </h2>
 
-            <p className="mt-5 max-w-2xl text-base font-medium leading-8 text-white/75 sm:text-lg">
+            <p className="mt-4 max-w-xl text-sm leading-6 text-white/75">
               Book your perfect car today and enjoy the road ahead with comfort,
               reliability, and peace of mind.
             </p>
 
-            <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
                 href="/contact"
-                className="inline-flex items-center justify-center gap-3 rounded-xl bg-[#FF6B00] px-7 py-4 text-base font-black text-white shadow-lg shadow-orange-600/20 transition hover:bg-orange-700"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-600 px-6 py-4 text-sm font-black text-white shadow-[0_18px_35px_rgba(234,88,12,0.28)] transition hover:-translate-y-1 hover:bg-orange-700"
               >
-                <CalendarCheck size={20} />
+                <CalendarCheck size={18} />
                 Book Now
-                <ArrowRight size={20} />
+                <ArrowRight size={18} />
               </Link>
 
               <Link
                 href="tel:+254716741039"
-                className="inline-flex items-center justify-center gap-3 rounded-xl border border-white/15 bg-white/10 px-7 py-4 text-base font-black text-white transition hover:bg-white/15"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/10 px-6 py-4 text-sm font-black text-white transition hover:bg-white/15"
               >
-                <Phone size={20} />
+                <Phone size={18} />
                 Call Us Now
               </Link>
             </div>
 
-            <div className="mt-9 flex flex-col gap-5 sm:flex-row sm:items-center">
+            <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
               <div className="flex -space-x-3">
                 <Avatar label="JM" />
                 <Avatar label="AO" />
                 <Avatar label="BK" />
                 <Avatar label="WN" />
-                <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-white bg-[#FF6B00] text-xs font-black text-white">
+
+                <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-orange-600 text-[11px] font-black text-white">
                   10K+
                 </div>
               </div>
 
-              <div className="hidden h-12 w-px bg-white/15 sm:block" />
+              <div className="hidden h-10 w-px bg-white/15 sm:block" />
 
               <div className="flex items-center gap-3">
                 <div className="flex gap-1 text-yellow-400">
                   {Array.from({ length: 5 }).map((_, index) => (
-                    <Star key={index} size={20} className="fill-yellow-400" />
+                    <Star key={index} size={16} className="fill-yellow-400" />
                   ))}
                 </div>
 
@@ -115,33 +114,27 @@ export default function CTASection() {
           </div>
         </div>
 
-        <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-            {benefits.map((benefit, index) => {
+        <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_28px_80px_rgba(10,22,40,0.08)] sm:p-6">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {benefits.map((benefit) => {
               const Icon = benefit.icon;
 
               return (
                 <div
                   key={benefit.title}
-                  className={`flex items-center gap-4 ${
-                    index !== benefits.length - 1
-                      ? "xl:border-r xl:border-slate-200"
-                      : ""
-                  }`}
+                  className="rounded-2xl border border-slate-200 bg-white p-4 transition hover:-translate-y-1 hover:border-orange-500 hover:shadow-xl"
                 >
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-[#FF6B00]">
-                    <Icon size={30} />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+                    <Icon size={18} />
                   </div>
 
-                  <div>
-                    <p className="text-base font-black text-[#06142A]">
-                      {benefit.title}
-                    </p>
+                  <p className="mt-4 text-sm font-black text-[#0A1628]">
+                    {benefit.title}
+                  </p>
 
-                    <p className="mt-1 text-sm font-medium leading-6 text-slate-500">
-                      {benefit.description}
-                    </p>
-                  </div>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    {benefit.description}
+                  </p>
                 </div>
               );
             })}
@@ -154,7 +147,7 @@ export default function CTASection() {
 
 function Avatar({ label }: { label: string }) {
   return (
-    <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-white bg-slate-200 text-xs font-black text-[#06142A]">
+    <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-slate-200 text-[11px] font-black text-[#0A1628]">
       {label}
     </div>
   );

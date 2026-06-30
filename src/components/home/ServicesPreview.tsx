@@ -17,7 +17,7 @@ const services = [
   {
     title: "Airport Transfers",
     description:
-      "Reliable pickups and drop-offs for JKIA, Wilson Airport, and hotel transfers.",
+      "Reliable pickups and drop-offs for JKIA, Wilson Airport, hotels, and offices.",
     image: "/lexus.jpeg",
     icon: Plane,
   },
@@ -66,7 +66,7 @@ const services = [
   {
     title: "24/7 Customer Support",
     description:
-      "We are available to help with booking questions, changes, and confirmations.",
+      "We help with booking questions, changes, availability, and confirmations.",
     image: "/lexus.jpeg",
     icon: Headphones,
   },
@@ -80,12 +80,12 @@ const benefits = [
   },
   {
     title: "Wide Range of Cars",
-    description: "Choose from economy, SUV, luxury, and family cars.",
+    description: "Economy, SUV, luxury, and family cars.",
     icon: Car,
   },
   {
     title: "24/7 Customer Support",
-    description: "Our team is always ready to assist you.",
+    description: "Our team is ready to assist you.",
     icon: Headphones,
   },
   {
@@ -97,61 +97,60 @@ const benefits = [
 
 export default function ServicesPreview() {
   return (
-    <section className="bg-[#f4f7fb] px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
-      <div className="mx-auto max-w-7xl">
-        <div className="mx-auto max-w-4xl text-center">
-          <p className="text-sm font-black uppercase tracking-[0.18em] text-[#FF6B00]">
+    <section className="bg-[#f6f8fb] px-4 py-20">
+      <div className="mx-auto max-w-[1120px]">
+        <div className="text-center">
+          <span className="inline-flex rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-orange-600">
             Our Services
-          </p>
+          </span>
 
-          <div className="mx-auto mt-3 h-0.5 w-12 rounded-full bg-[#FF6B00]" />
-
-          <h2 className="mt-5 text-4xl font-black tracking-[-0.05em] text-[#06142A] sm:text-5xl lg:text-6xl">
+          <h2 className="mt-4 text-3xl font-black tracking-[-0.04em] text-[#0A1628] sm:text-4xl md:text-5xl">
             Premium Services, Every Step of the Way
           </h2>
 
-          <p className="mx-auto mt-5 max-w-2xl text-base font-medium leading-8 text-slate-600 sm:text-lg">
-            From airport transfers to long-term rentals, we offer a wide range
-            of car hire services to make your journey smooth, comfortable, and
-            worry-free.
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-600">
+            From airport transfers to long-term rentals, we offer car hire
+            services that make your journey smooth, comfortable, and simple.
           </p>
         </div>
 
-        <div className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {services.map((service) => {
             const Icon = service.icon;
 
             return (
               <article
                 key={service.title}
-                className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/10"
+                className="group overflow-hidden rounded-3xl border border-slate-200 bg-white p-2 shadow-sm transition hover:-translate-y-1 hover:border-orange-500 hover:shadow-xl"
               >
-                <div className="relative h-44 overflow-hidden bg-slate-200">
+                <div className="relative h-40 overflow-hidden rounded-2xl bg-slate-200">
                   <Image
                     src={service.image}
                     alt={service.title}
                     fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 25vw"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 280px"
                     className="object-cover transition duration-500 group-hover:scale-105"
                   />
+
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#06142A]/55 via-transparent to-transparent" />
+
+                  <div className="absolute bottom-3 left-3 flex h-10 w-10 items-center justify-center rounded-xl bg-white/90 text-orange-600 shadow-sm backdrop-blur">
+                    <Icon size={18} />
+                  </div>
                 </div>
 
-                <div className="relative px-5 pb-6 pt-9">
-                  <div className="absolute -top-8 left-5 flex h-16 w-16 items-center justify-center rounded-full border-4 border-white bg-orange-50 text-[#FF6B00] shadow-sm">
-                    <Icon size={26} />
-                  </div>
-
-                  <h3 className="text-xl font-black tracking-[-0.03em] text-[#06142A]">
+                <div className="px-3 pb-4 pt-4">
+                  <h3 className="text-sm font-black text-[#0A1628]">
                     {service.title}
                   </h3>
 
-                  <p className="mt-2 min-h-[56px] text-sm font-medium leading-7 text-slate-600">
+                  <p className="mt-2 min-h-[72px] text-sm leading-6 text-slate-600">
                     {service.description}
                   </p>
 
                   <Link
                     href="/services"
-                    className="mt-5 inline-flex items-center gap-2 text-sm font-black text-[#FF6B00]"
+                    className="mt-4 inline-flex items-center gap-2 text-sm font-black text-orange-600 transition hover:text-orange-700"
                   >
                     Learn more
                     <ArrowRight size={16} />
@@ -162,34 +161,39 @@ export default function ServicesPreview() {
           })}
         </div>
 
-        <div className="mt-8 rounded-2xl bg-[#06142A] px-5 py-6 text-white shadow-xl shadow-slate-900/10 sm:px-7">
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-            {benefits.map((benefit, index) => {
+        <div className="mt-8 rounded-3xl bg-[#06142A] p-5 text-white shadow-[0_28px_80px_rgba(10,22,40,0.12)] sm:p-6">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {benefits.map((benefit) => {
               const Icon = benefit.icon;
 
               return (
                 <div
                   key={benefit.title}
-                  className={`flex items-center gap-4 ${
-                    index !== benefits.length - 1
-                      ? "xl:border-r xl:border-white/10"
-                      : ""
-                  }`}
+                  className="rounded-2xl border border-white/10 bg-white/5 p-4 transition hover:bg-white/10"
                 >
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-[#FF6B00]">
-                    <Icon size={28} />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-orange-400">
+                    <Icon size={18} />
                   </div>
 
-                  <div>
-                    <h3 className="text-base font-black">{benefit.title}</h3>
-                    <p className="mt-1 text-sm font-medium leading-6 text-white/70">
-                      {benefit.description}
-                    </p>
-                  </div>
+                  <h3 className="mt-4 text-sm font-black">{benefit.title}</h3>
+
+                  <p className="mt-2 text-sm leading-6 text-white/70">
+                    {benefit.description}
+                  </p>
                 </div>
               );
             })}
           </div>
+        </div>
+
+        <div className="mt-8 text-center">
+          <Link
+            href="/services"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-6 py-4 text-sm font-black text-white shadow-[0_18px_35px_rgba(234,88,12,0.28)] transition hover:-translate-y-1 hover:bg-orange-700 sm:w-fit"
+          >
+            View All Services
+            <ArrowRight size={18} />
+          </Link>
         </div>
       </div>
     </section>

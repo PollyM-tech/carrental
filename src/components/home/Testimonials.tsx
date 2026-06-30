@@ -25,64 +25,79 @@ const testimonials = [
   },
 ];
 
+const trustStats = [
+  {
+    value: "10K+",
+    label: "Happy customer journeys",
+    icon: Users,
+  },
+  {
+    value: "4.8",
+    label: "Average service rating",
+    icon: Star,
+  },
+  {
+    value: "Trusted",
+    label: "By families and businesses",
+    icon: ThumbsUp,
+  },
+];
+
 export default function Testimonials() {
   return (
-    <section className="bg-[#f4f7fb] px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
-      <div className="mx-auto max-w-7xl">
-        <div className="mx-auto max-w-4xl text-center">
-          <p className="text-sm font-black uppercase tracking-[0.18em] text-[#FF6B00]">
+    <section className="bg-[#f6f8fb] px-4 py-20">
+      <div className="mx-auto max-w-[1120px]">
+        <div className="text-center">
+          <span className="inline-flex rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-orange-600">
             Testimonials
-          </p>
+          </span>
 
-          <div className="mx-auto mt-3 h-0.5 w-12 rounded-full bg-[#FF6B00]" />
-
-          <h2 className="mt-5 text-4xl font-black tracking-[-0.05em] text-[#06142A] sm:text-5xl lg:text-6xl">
+          <h2 className="mt-4 text-3xl font-black tracking-[-0.04em] text-[#0A1628] sm:text-4xl md:text-5xl">
             Trusted by Customers Across Kenya
           </h2>
 
-          <p className="mx-auto mt-5 max-w-2xl text-base font-medium leading-8 text-slate-600 sm:text-lg">
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-600">
             Customers choose MoBri Car Hire for reliable cars, quick
             communication, and a smoother booking experience.
           </p>
         </div>
 
-        <div className="mt-12 grid gap-6 lg:grid-cols-3">
+        <div className="mt-10 grid gap-5 lg:grid-cols-3">
           {testimonials.map((item) => (
             <article
               key={item.name}
-              className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/10"
+              className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-orange-500 hover:shadow-xl sm:p-6"
             >
               <div className="flex items-center justify-between gap-4">
-                <div className="relative h-16 w-16 overflow-hidden rounded-full bg-slate-100">
+                <div className="relative h-12 w-12 overflow-hidden rounded-full bg-slate-100">
                   <Image
                     src={item.image}
                     alt={item.name}
                     fill
-                    sizes="64px"
+                    sizes="48px"
                     className="object-cover"
                   />
                 </div>
 
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-orange-50 text-[#FF6B00]">
-                  <Quote size={24} />
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+                  <Quote size={18} />
                 </div>
               </div>
 
               <div className="mt-5 flex gap-1 text-yellow-400">
                 {Array.from({ length: 5 }).map((_, index) => (
-                  <Star key={index} size={18} className="fill-yellow-400" />
+                  <Star key={index} size={15} className="fill-yellow-400" />
                 ))}
               </div>
 
-              <p className="mt-5 text-sm font-medium leading-7 text-slate-600">
+              <p className="mt-4 text-sm leading-6 text-slate-600">
                 “{item.quote}”
               </p>
 
-              <div className="mt-6 border-t border-slate-100 pt-5">
-                <p className="text-base font-black text-[#06142A]">
-                  {item.name}
-                </p>
-                <p className="mt-1 text-sm font-semibold text-slate-500">
+              <div className="mt-5 border-t border-slate-100 pt-4">
+                <p className="text-sm font-black text-[#0A1628]">{item.name}</p>
+
+                <p className="mt-1 text-sm leading-6 text-slate-500">
                   {item.role}
                 </p>
               </div>
@@ -90,46 +105,39 @@ export default function Testimonials() {
           ))}
         </div>
 
-        <div className="mt-10 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-          <div className="grid gap-6 lg:grid-cols-[1fr_1fr_1fr] lg:items-center">
-            <div className="flex items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-orange-50 text-[#FF6B00]">
-                <Users size={30} />
-              </div>
+        <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_28px_80px_rgba(10,22,40,0.08)] sm:p-6">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {trustStats.map((stat) => {
+              const Icon = stat.icon;
 
-              <div>
-                <p className="text-2xl font-black text-[#06142A]">10K+</p>
-                <p className="text-sm font-semibold text-slate-500">
-                  Happy customer journeys
-                </p>
-              </div>
-            </div>
+              return (
+                <div
+                  key={stat.label}
+                  className="rounded-2xl border border-slate-200 bg-white p-4 transition hover:-translate-y-1 hover:border-orange-500 hover:shadow-xl"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+                      <Icon
+                        size={18}
+                        className={
+                          stat.value === "4.8" ? "fill-orange-600" : ""
+                        }
+                      />
+                    </div>
 
-            <div className="flex items-center gap-4 border-slate-200 lg:border-l lg:pl-8">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-orange-50 text-[#FF6B00]">
-                <Star size={30} className="fill-[#FF6B00]" />
-              </div>
+                    <div className="min-w-0">
+                      <p className="text-xl font-black leading-none tracking-[-0.04em] text-[#0A1628]">
+                        {stat.value}
+                      </p>
 
-              <div>
-                <p className="text-2xl font-black text-[#06142A]">4.8/5</p>
-                <p className="text-sm font-semibold text-slate-500">
-                  Average service rating
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4 border-slate-200 lg:border-l lg:pl-8">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-orange-50 text-[#FF6B00]">
-                <ThumbsUp size={30} />
-              </div>
-
-              <div>
-                <p className="text-2xl font-black text-[#06142A]">Trusted</p>
-                <p className="text-sm font-semibold text-slate-500">
-                  By families and businesses
-                </p>
-              </div>
-            </div>
+                      <p className="mt-2 text-xs font-black uppercase tracking-[0.06em] text-slate-600">
+                        {stat.label}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

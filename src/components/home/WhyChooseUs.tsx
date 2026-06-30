@@ -39,7 +39,7 @@ const reasons = [
   {
     title: "Safe & Reliable",
     description:
-      "Clean, well-maintained vehicles prepared for comfort and dependable travel.",
+      "Clean, well-maintained vehicles prepared for comfortable travel.",
     icon: CheckCircle2,
   },
   {
@@ -75,45 +75,43 @@ const stats = [
 
 export default function WhyChooseUs() {
   return (
-    <section className="bg-[#f4f7fb] px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
-      <div className="mx-auto max-w-7xl">
-        <div className="mx-auto max-w-4xl text-center">
-          <p className="text-sm font-black uppercase tracking-[0.18em] text-[#FF6B00]">
+    <section className="bg-[#f6f8fb] px-4 py-20">
+      <div className="mx-auto max-w-[1120px]">
+        <div className="text-center">
+          <span className="inline-flex rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-orange-600">
             Why Choose Us
-          </p>
+          </span>
 
-          <div className="mx-auto mt-3 h-0.5 w-12 rounded-full bg-[#FF6B00]" />
-
-          <h2 className="mt-5 text-4xl font-black tracking-[-0.05em] text-[#06142A] sm:text-5xl lg:text-6xl">
+          <h2 className="mt-4 text-3xl font-black tracking-[-0.04em] text-[#0A1628] sm:text-4xl md:text-5xl">
             More Than a Ride, It’s a Better Experience
           </h2>
 
-          <p className="mx-auto mt-5 max-w-2xl text-base font-medium leading-8 text-slate-600 sm:text-lg">
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-600">
             We go the extra mile to deliver reliable car hire services you can
             trust every time you travel.
           </p>
         </div>
 
-        <div className="mt-12 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {reasons.map((reason) => {
             const Icon = reason.icon;
 
             return (
               <article
                 key={reason.title}
-                className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/10"
+                className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-orange-500 hover:shadow-xl sm:p-6"
               >
-                <div className="flex items-start gap-5">
-                  <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-orange-50 text-[#FF6B00]">
-                    <Icon size={34} />
+                <div className="flex items-start gap-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+                    <Icon size={18} />
                   </div>
 
-                  <div>
-                    <h3 className="text-xl font-black tracking-[-0.03em] text-[#06142A]">
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-black text-[#0A1628]">
                       {reason.title}
                     </h3>
 
-                    <p className="mt-3 text-sm font-medium leading-7 text-slate-600">
+                    <p className="mt-2 text-sm leading-6 text-slate-600">
                       {reason.description}
                     </p>
                   </div>
@@ -123,8 +121,8 @@ export default function WhyChooseUs() {
           })}
         </div>
 
-        <div className="mt-10 overflow-hidden rounded-3xl bg-[#06142A] shadow-xl shadow-slate-900/10">
-          <div className="grid gap-0 lg:grid-cols-[1fr_1fr]">
+        <div className="mt-8 overflow-hidden rounded-3xl bg-[#06142A] shadow-[0_28px_80px_rgba(10,22,40,0.12)]">
+          <div className="grid lg:grid-cols-[1fr_0.85fr]">
             <div className="grid grid-cols-2 divide-x divide-y divide-white/10 sm:grid-cols-4 sm:divide-y-0">
               {stats.map((stat) => {
                 const Icon = stat.icon;
@@ -132,15 +130,17 @@ export default function WhyChooseUs() {
                 return (
                   <div
                     key={stat.label}
-                    className="p-6 text-center text-white sm:p-8"
+                    className="p-5 text-center text-white sm:p-6"
                   >
-                    <Icon className="mx-auto text-[#FF6B00]" size={34} />
+                    <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-orange-400">
+                      <Icon size={18} />
+                    </div>
 
-                    <p className="mt-4 text-4xl font-black tracking-[-0.04em]">
+                    <p className="mt-4 text-xl font-black leading-none tracking-[-0.04em]">
                       {stat.value}
                     </p>
 
-                    <p className="mt-2 text-sm font-semibold text-white/70">
+                    <p className="mt-2 text-xs font-black uppercase tracking-[0.06em] text-white/60">
                       {stat.label}
                     </p>
                   </div>
@@ -148,21 +148,22 @@ export default function WhyChooseUs() {
               })}
             </div>
 
-            <div className="relative hidden min-h-[280px] lg:block">
+            <div className="relative hidden min-h-[240px] lg:block">
               <Image
                 src="/mercedes.jpg"
                 alt="MoBri Car Hire vehicle"
                 fill
-                sizes="50vw"
+                sizes="420px"
                 className="object-cover"
               />
+
               <div className="absolute inset-0 bg-gradient-to-r from-[#06142A] via-[#06142A]/40 to-transparent" />
             </div>
           </div>
         </div>
 
-        <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_28px_80px_rgba(10,22,40,0.08)] sm:p-6">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <MiniBenefit
               icon={ShieldCheck}
               title="Best Price"
@@ -196,14 +197,16 @@ function MiniBenefit({
   text: string;
 }) {
   return (
-    <div className="flex items-center gap-4">
-      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-[#FF6B00]">
-        <Icon size={28} />
-      </div>
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 transition hover:-translate-y-1 hover:border-orange-500 hover:shadow-xl">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+          <Icon size={18} />
+        </div>
 
-      <div>
-        <p className="text-base font-black text-[#06142A]">{title}</p>
-        <p className="mt-1 text-sm font-medium text-slate-500">{text}</p>
+        <div className="min-w-0">
+          <p className="text-sm font-black text-[#0A1628]">{title}</p>
+          <p className="mt-2 text-sm leading-6 text-slate-600">{text}</p>
+        </div>
       </div>
     </div>
   );
