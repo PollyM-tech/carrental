@@ -107,7 +107,7 @@ Features include:
 
 ## Project Structure
 
-```txt
+``txt
 carrental/
 ├── convex/
 │   ├── _generated/
@@ -431,7 +431,7 @@ Example:
   alt="MoBri Car Hire logo"
   fill
   sizes="112px"
-  className="object-contain"
+  className="object-contain"`
 />
 ```
 
@@ -722,3 +722,31 @@ Humphrey Morara
 ## License
 
 This project is private and intended for MoBri Car Hire business use.
+
+carrental/
+│
+├── frontend/
+│   ├── src/
+│   ├── public/
+│   ├── package.json
+│   ├── next.config.ts
+│   └── ...
+│
+├── backend/
+│   ├── manage.py
+│   ├── config/
+│   ├── apps/
+│   │   ├── accounts/
+│   │   ├── customers/
+│   │   ├── fleet/
+│   │   ├── bookings/
+│   │   ├── kyc/
+│   │   ├── payments/
+│   │   └── ...
+│   ├── requirements.txt
+│   └── .env.example
+│
+├── docs/
+├── README.md
+├── .gitignore
+└── docker-compose.yml   # optional later
