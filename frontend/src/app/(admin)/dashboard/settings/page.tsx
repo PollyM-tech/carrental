@@ -13,7 +13,7 @@ import {
   Smartphone,
 } from "lucide-react";
 
-import { api } from "../../../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 import AdminHeader from "@/components/admin/AdminHeader";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 

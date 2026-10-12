@@ -19,8 +19,8 @@ import {
   XCircle,
 } from "lucide-react";
 
-import { api } from "../../../../../convex/_generated/api";
-import type { Id } from "../../../../../convex/_generated/dataModel";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import AdminHeader from "@/components/admin/AdminHeader";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 

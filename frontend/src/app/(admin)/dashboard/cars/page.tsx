@@ -13,8 +13,8 @@ import {
   Wrench,
 } from "lucide-react";
 
-import { api } from "../../../../convex/_generated/api";
-import type { Doc } from "../../../../convex/_generated/dataModel";
+import { api } from "@convex/_generated/api";
+import type { Doc } from "@convex/_generated/dataModel";
 import CarForm from "@/components/admin/CarForm";
 import CarsTable from "@/components/admin/CarsTable";
 import AdminHeader from "@/components/admin/AdminHeader";

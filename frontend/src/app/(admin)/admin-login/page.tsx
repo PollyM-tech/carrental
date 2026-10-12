@@ -5,7 +5,7 @@ import { useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import { Car, Lock } from "lucide-react";
 
-import { api } from "../../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 export default function AdminLoginPage() {
   const router = useRouter();
