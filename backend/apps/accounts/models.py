@@ -3,6 +3,7 @@ import uuid
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from apps.workflow.fields import EncryptedEmailField, EncryptedTextField
 
 
 class UserManager(BaseUserManager):
@@ -60,13 +61,12 @@ class User(AbstractUser):
 
     username = None
 
-    email = models.EmailField(
+    email = EncryptedEmailField(
         unique=True,
         db_index=True,
     )
 
-    phone = models.CharField(
-        max_length=20,
+    phone = EncryptedTextField(
         blank=True,
     )
 

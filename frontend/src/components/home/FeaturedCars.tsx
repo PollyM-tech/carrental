@@ -1,3 +1,4 @@
+"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -10,11 +11,14 @@ import {
 } from "lucide-react";
 
 import {
-  featuredCars,
   formatPrice,
 } from "@/data/cars";
 
+import { useCatalogue } from "@/lib/use-catalogue";
+
 export default function FeaturedCars() {
+  const { cars, error, loading } = useCatalogue();
+  const featuredCars = cars.filter(car => car.isFeatured);
   return (
     <section
       id="featured-cars"
@@ -44,6 +48,8 @@ export default function FeaturedCars() {
           </p>
         </div>
 
+        {loading && <p role="status" className="text-center">Loading featured vehicles…</p>}
+        {error && <p role="alert" className="text-center text-red-700">{error}</p>}
         {/* Vehicles */}
         {featuredCars.length === 0 ? (
           <div className="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-[#F5F8FF] px-6 py-9 text-center">

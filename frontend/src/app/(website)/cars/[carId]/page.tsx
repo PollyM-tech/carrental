@@ -11,17 +11,11 @@ import {
   Users,
 } from "lucide-react";
 
-import {
-  cars,
-  formatPrice,
-  getCarById,
-} from "@/data/cars";
+import { formatPrice } from "@/data/cars";
+import { workflow, PublicCar } from "@/lib/workflow";
+import { catalogueCar } from "@/lib/catalogue";
 
-export function generateStaticParams() {
-  return cars.map((car) => ({
-    carId: car.id,
-  }));
-}
+export const dynamic = "force-dynamic";
 
 export const dynamicParams = true;
 
@@ -33,7 +27,10 @@ export default async function CarDetailsPage({
   params,
 }: PageProps) {
   const { carId } = await params;
-  const car = getCarById(carId);
+  let car;
+  try {
+    car = catalogueCar(await workflow<PublicCar>(`workflow/public/cars/${carId}/`, { public: true }));
+  } catch { car = null; }
 
   if (!car) {
     return (
@@ -92,6 +89,7 @@ export default async function CarDetailsPage({
               MOVARA CAR HIRE
             </span>
 
+            <Link href={`/account?car=${car.id}`} className="mb-4 inline-flex rounded-xl bg-orange-600 px-5 py-3 font-bold text-white">Choose dates and book</Link>
             <h1 className="mt-2 text-[26px] font-bold leading-tight text-[#0B1C4D] sm:text-[32px]">
               {car.name}
             </h1>

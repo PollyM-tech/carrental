@@ -14,11 +14,13 @@ import {
 } from "lucide-react";
 
 import {
-  cars,
   formatPrice,
 } from "@/data/cars";
 
+import { useCatalogue } from "@/lib/use-catalogue";
+
 export default function CarsPage() {
+  const { cars, error, loading } = useCatalogue();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All Cars");
 
@@ -27,7 +29,7 @@ export default function CarsPage() {
       "All Cars",
       ...new Set(cars.map((car) => car.category)),
     ],
-    []
+    [cars]
   );
 
   const filteredCars = cars.filter((car) => {
@@ -76,6 +78,8 @@ export default function CarsPage() {
         </div>
       </section>
 
+      {loading && <p className="p-6 text-center" role="status">Loading vehicles…</p>}
+      {error && <p className="p-6 text-center text-red-700" role="alert">{error}</p>}
       {/* Fleet and filters */}
       <section className="px-4 py-12 sm:px-6 sm:py-14 lg:px-8">
         <div className="mx-auto max-w-7xl">

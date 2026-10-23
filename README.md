@@ -1,752 +1,143 @@
-# MoBri Car Hire
+# Movara Car Hire
 
-MoBri Car Hire is a modern car rental web application built for a Nairobi-based car hire business. The platform includes a public website where customers can browse vehicles, view car details, send booking requests, contact the business through WhatsApp, and learn about available services. It also includes a protected admin dashboard for managing cars, bookings, business settings, and fleet visibility.
+Movara uses Next.js and TypeScript for the website and dashboards, Django REST Framework for the backend, PostgreSQL for records, and Cloudinary for public vehicle photos.
 
-The project is built with **Next.js App Router**, **TypeScript**, **Tailwind CSS**, and **Convex**. It is designed to be fast, responsive, mobile-friendly, and easy to deploy on Vercel.
+## Start locally
 
----
-
-## Live Website
-
-Production URL:
-
-```txt
-https://carrental-rose.vercel.app/
-```
-
-Admin login URL:
-
-```txt
-https://carrental-rose.vercel.app/admin-login
-```
-
----
-
-## Project Overview
-
-MoBri Car Hire provides two main experiences:
-
-1. **Public customer website**
-
-   * Homepage with hero section, featured cars, services, FAQs, testimonials, and booking CTA.
-   * Public fleet page where customers can view available vehicles.
-   * Individual car details pages.
-   * Contact and booking page.
-   * Services page.
-   * FAQ page.
-   * Floating WhatsApp button.
-
-2. **Admin dashboard**
-
-   * Admin login using a password-based session.
-   * Dashboard overview with fleet and booking statistics.
-   * Car management page.
-   * Booking management page.
-   * Individual booking detail page.
-   * Business settings page.
-   * Mobile-friendly admin sidebar and header.
-
----
-
-## Tech Stack
-
-| Technology   | Purpose                                            |
-| ------------ | -------------------------------------------------- |
-| Next.js      | Frontend framework and routing                     |
-| TypeScript   | Type-safe application code                         |
-| Tailwind CSS | Styling and responsive UI                          |
-| Convex       | Backend database, queries, mutations, file storage |
-| Vercel       | Deployment and hosting                             |
-| Lucide React | Icons                                              |
-| Next/Image   | Optimized image rendering                          |
-
----
-
-## Main Features
-
-### Public Website
-
-The public side of the website is designed for customers who want to rent a car quickly and easily.
-
-Features include:
-
-* Responsive homepage.
-* Premium car hire branding.
-* Featured car cards.
-* Public cars page.
-* Car details page using dynamic route `/cars/[carId]`.
-* Contact and booking form.
-* WhatsApp inquiry flow.
-* FAQ preview and full FAQ page.
-* Services page.
-* About page.
-* Floating WhatsApp button.
-* Footer with business contact details.
-
----
-
-### Admin Dashboard
-
-The admin dashboard is used by the business owner or staff to manage the rental operation.
-
-Features include:
-
-* Password-based admin login.
-* Admin session stored using localStorage token.
-* Dashboard statistics.
-* Fleet summary.
-* Recent bookings.
-* Car creation, update, status change, featured toggle, and soft delete.
-* Booking list and booking status management.
-* Booking detail page.
-* Business settings management.
-* Responsive admin sidebar.
-* Responsive admin header with search, notifications, and logout.
-
----
-
-## Project Structure
-
-``txt
-carrental/
-├── convex/
-│   ├── _generated/
-│   ├── lib/
-│   │   └── adminAuth.ts
-│   ├── admin.ts
-│   ├── bookings.ts
-│   ├── cars.ts
-│   ├── schema.ts
-│   └── settings.ts
-│
-├── public/
-│   ├── logo.png
-│   ├── lexus.jpeg
-│   ├── familycar.jpg
-│   ├── mercedes.jpg
-│   └── other image assets
-│
-├── src/
-│   ├── app/
-│   │   ├── about/
-│   │   │   └── page.tsx
-│   │   ├── admin-login/
-│   │   │   └── page.tsx
-│   │   ├── cars/
-│   │   │   ├── [carId]/
-│   │   │   │   └── page.tsx
-│   │   │   └── page.tsx
-│   │   ├── contact/
-│   │   │   └── page.tsx
-│   │   ├── dashboard/
-│   │   │   ├── bookings/
-│   │   │   │   ├── [bookingId]/
-│   │   │   │   │   └── page.tsx
-│   │   │   │   └── page.tsx
-│   │   │   ├── cars/
-│   │   │   │   └── page.tsx
-│   │   │   ├── settings/
-│   │   │   │   └── page.tsx
-│   │   │   └── page.tsx
-│   │   ├── faq/
-│   │   │   └── page.tsx
-│   │   ├── services/
-│   │   │   └── page.tsx
-│   │   ├── globals.css
-│   │   ├── layout.tsx
-│   │   └── page.tsx
-│   │
-│   ├── components/
-│   │   ├── admin/
-│   │   │   ├── AdminHeader.tsx
-│   │   │   ├── AdminSidebar.tsx
-│   │   │   ├── BookingsTable.tsx
-│   │   │   ├── CarForm.tsx
-│   │   │   └── CarsTable.tsx
-│   │   ├── home/
-│   │   │   ├── AboutUs.tsx
-│   │   │   ├── BookingForm.tsx
-│   │   │   ├── CTASection.tsx
-│   │   │   ├── FAQPreview.tsx
-│   │   │   ├── FeaturedCars.tsx
-│   │   │   ├── Hero.tsx
-│   │   │   ├── ServicesPreview.tsx
-│   │   │   ├── Testimonials.tsx
-│   │   │   └── WhyChooseUs.tsx
-│   │   ├── layout/
-│   │   │   ├── Footer.tsx
-│   │   │   └── Navbar.tsx
-│   │   └── shared/
-│   │       └── WhatsAppButton.tsx
-│   │
-│   └── providers/
-│       └── convex-provider.tsx
-│
-├── .env.local
-├── next.config.ts
-├── package.json
-├── tsconfig.json
-└── README.md
-```
-
----
-
-## Routes
-
-### Public Routes
-
-| Route           | Description                 |
-| --------------- | --------------------------- |
-| `/`             | Homepage                    |
-| `/about`        | About MoBri Car Hire        |
-| `/cars`         | Public fleet page           |
-| `/cars/[carId]` | Individual car details page |
-| `/contact`      | Contact and booking page    |
-| `/faq`          | Full FAQ page               |
-| `/services`     | Services page               |
-
-### Admin Routes
-
-| Route                             | Description              |
-| --------------------------------- | ------------------------ |
-| `/admin-login`                    | Admin login page         |
-| `/dashboard`                      | Admin dashboard overview |
-| `/dashboard/cars`                 | Manage cars              |
-| `/dashboard/bookings`             | Manage bookings          |
-| `/dashboard/bookings/[bookingId]` | Booking detail page      |
-| `/dashboard/settings`             | Business settings page   |
-
----
-
-## Environment Variables
-
-Create a `.env.local` file in the project root.
-
-```env
-NEXT_PUBLIC_CONVEX_URL=your_convex_deployment_url
-```
-
-Example:
-
-```env
-NEXT_PUBLIC_CONVEX_URL=https://your-convex-deployment.convex.cloud
-```
-
-The admin password is stored in Convex environment variables, not in `.env.local`.
-
-Set it using:
+Backend:
 
 ```bash
-npx convex env set ADMIN_PASSWORD "your_admin_password"
+cd backend
+source .venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver 127.0.0.1:8001
 ```
 
-To confirm Convex environment variables:
+Frontend:
 
 ```bash
-npx convex env list
-```
-
----
-
-## Installation
-
-Clone the repository:
-
-```bash
-git clone your-repository-url
-cd carrental
-```
-
-Install dependencies:
-
-```bash
-npm install
-```
-
-Start Convex development server:
-
-```bash
-npx convex dev
-```
-
-Start the Next.js development server:
-
-```bash
+cd frontend
+npm ci
 npm run dev
 ```
 
-Open the app in your browser:
+`frontend/.env` or `.env.local` must contain:
 
-```txt
-http://localhost:3000
+```dotenv
+NEXT_PUBLIC_API_URL=http://127.0.0.1:8001/api/v1
 ```
 
----
+For a fresh installation, create a Python virtual environment, copy `backend/.env.example` to `backend/.env`, configure PostgreSQL, generate the encryption key, run migrations, then create an owner with `python manage.py createsuperuser`.
 
-## Development Commands
+## Where to work
 
-| Command                                        | Purpose                            |
-| ---------------------------------------------- | ---------------------------------- |
-| `npm run dev`                                  | Start local development server     |
-| `npm run build`                                | Create production build            |
-| `npm run start`                                | Start production server locally    |
-| `npx convex dev`                               | Run Convex development environment |
-| `npx convex env list`                          | List Convex environment variables  |
-| `npx convex env set ADMIN_PASSWORD "password"` | Set admin password                 |
+| Page | Purpose |
+| --- | --- |
+| `/admin-login` | Staff email, password and authenticator login |
+| `/dashboard` | Role-specific operations dashboard |
+| `/dashboard/cars` | Vehicle records, registration, mileage and Cloudinary photos |
+| `/dashboard/fleet` | Insurance and inspection records; service and repair date blocks |
+| `/dashboard/bookings` | Booking history and front-desk-assisted drafts |
+| `/dashboard/kyc` | Document review, corrections, rejection and conditional approval |
+| `/dashboard/team` | Owner assignment of staff roles |
+| `/dashboard/audit` | Owner view of append-only audit events |
+| `/dashboard/policies` | Approved eligibility, staffed hours, category and privacy settings |
+| `/account` | Customer account, WhatsApp verification, profile, bookings and documents |
+| `/cars` | Live public Django catalogue |
+| `/privacy` | Published approved privacy notice |
 
----
+A vehicle needs a registration number and current insurance/inspection records to appear publicly. Booking dates must be covered by those records and must avoid service periods and blocking bookings. Rental intervals use an exclusive end date, so a return date can be the next rental's pickup date.
 
-## Admin Access
+## Staff authentication and roles
 
-The admin dashboard is accessed through:
+First staff login returns an authenticator setup key after a valid email/password. Add the key to an authenticator app and enter its six-digit code. Subsequent logins require a fresh code. Django administration also requires an enrolled authenticator. Generic customer login cannot issue staff tokens.
 
-```txt
-/admin-login
-```
+Owner access uses the existing admin role or Django superuser flag. Staff roles use Django groups: `fleet_manager`, `kyc_reviewer`, `front_desk`, `finance`, `admin`. An owner can grant roles to an existing account by email. API permissions enforce these roles independently of navigation visibility.
 
-After successful login, the user is redirected to:
-
-```txt
-/dashboard
-```
-
-The admin login system uses:
-
-* Convex mutation for login.
-* Admin password stored in Convex environment variables.
-* Admin session token stored in browser localStorage.
-* localStorage key:
-
-```txt
-mobri_admin_token
-```
-
-The admin token is passed to protected Convex queries and mutations.
-
----
-
-## Convex Backend Overview
-
-The Convex backend handles:
-
-* Cars.
-* Bookings.
-* Admin sessions.
-* Settings.
-* Image uploads.
-* Public queries.
-* Protected admin queries and mutations.
-
-### Important Convex Files
-
-| File                      | Purpose                       |
-| ------------------------- | ----------------------------- |
-| `convex/schema.ts`        | Database schema               |
-| `convex/cars.ts`          | Car queries and mutations     |
-| `convex/bookings.ts`      | Booking queries and mutations |
-| `convex/admin.ts`         | Admin login/session logic     |
-| `convex/settings.ts`      | Business settings logic       |
-| `convex/lib/adminAuth.ts` | Admin session guard           |
-
----
-
-## Car Management
-
-Admins can:
-
-* Add a new car.
-* Upload a car image.
-* Edit car details.
-* Change car status.
-* Mark a car as featured.
-* Remove a car using soft delete.
-
-Car statuses include:
-
-```txt
-available
-booked
-maintenance
-unavailable
-```
-
-Public pages only show vehicles that are available and not deleted.
-
-Featured cars appear on the homepage when:
-
-```txt
-status = available
-isFeatured = true
-deletedAt is not set
-```
-
----
-
-## Booking Management
-
-Customers can submit booking requests from the public website.
-
-A booking can include:
-
-* Customer name.
-* Customer phone.
-* Customer email.
-* Selected car.
-* Pickup location.
-* Return location.
-* Pickup date.
-* Return date.
-* Optional message.
-
-Booking statuses include:
-
-```txt
-pending
-confirmed
-active
-completed
-cancelled
-```
-
-Admins can review and update bookings from the dashboard.
-
----
-
-## Image Handling
-
-The project uses two types of images:
-
-1. Static images stored in the `public/` folder.
-2. Uploaded images stored using Convex file storage.
-
-Next.js image optimization is configured through `next.config.ts`.
-
-When using `next/image` with `fill`, always include a `sizes` prop.
-
-Example:
-
-```tsx
-<Image
-  src="/logo.png"
-  alt="MoBri Car Hire logo"
-  fill
-  sizes="112px"
-  className="object-contain"`
-/>
-```
-
-For hero or above-the-fold images, use `priority`.
-
-Example:
-
-```tsx
-<Image
-  src="/familycar.jpg"
-  alt="MoBri Car Hire vehicle"
-  fill
-  priority
-  sizes="100vw"
-  className="object-cover"
-/>
-```
-
----
-
-## UI/UX Design System
-
-The app follows a premium car rental design style.
-
-### Brand Colors
-
-| Color            | Hex       | Usage                                         |
-| ---------------- | --------- | --------------------------------------------- |
-| Dark Navy        | `#06142A` | Main text, admin sidebar, dark cards          |
-| Orange           | `#FF6B00` | Primary CTA buttons, highlights               |
-| Blue             | `#1E6FD9` | Secondary accent, links, dashboard highlights |
-| Light Background | `#f4f7fb` | Page backgrounds                              |
-| White            | `#ffffff` | Cards and content surfaces                    |
-
-### Design Principles
-
-* Mobile-first responsiveness.
-* Clean and spacious layouts.
-* Clear visual hierarchy.
-* Strong calls-to-action.
-* Rounded cards.
-* Soft shadows.
-* Good contrast.
-* Easy navigation.
-* Fast loading pages.
-* Accessible buttons and links.
-
----
-
-## Responsive Design
-
-The project should work well on:
-
-```txt
-375px mobile
-430px mobile
-768px tablet
-1024px laptop
-1366px desktop
-```
-
-Important responsive rules:
-
-* Avoid horizontal scrolling.
-* Use `min-w-0` inside flex/grid layouts.
-* Tables should become cards on mobile where possible.
-* Admin sidebar should slide in on mobile.
-* Header controls should fit small screens.
-* Dashboard right-side panels should stack on smaller screens.
-
----
-
-## Deployment
-
-The project is deployed on Vercel.
-
-Before deploying, run:
+Lost authenticator recovery requires trusted server access and a recorded reason:
 
 ```bash
+python manage.py reset_staff_mfa staff@example.com --reason "Owner-approved device replacement"
+```
+
+JWT access tokens expire after 30 minutes. Users sign in again when needed. Logout removes the browser token; it does not revoke an already issued access token.
+
+## Storage and configuration
+
+Keep credentials in `backend/.env` or the backend process environment. Existing process variables take precedence. Never put server credentials in `NEXT_PUBLIC_*` variables.
+
+- PostgreSQL uses `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT` with `USE_POSTGRES=True`.
+- `DATA_ENCRYPTION_KEY` encrypts profiles, document files, phone numbers, email addresses and staff authenticator secrets. Generate it once using `Fernet.generate_key()` and back it up securely. Losing it prevents reading data and logging in. Rotation needs a data migration; replacing the value directly is not supported.
+- Email encryption is deterministic to support unique login lookups; equality between encrypted email values remains visible. Phone and document encryption is randomized.
+- Cloudinary uses `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`. Only public catalogue photos use Cloudinary URLs.
+- IDs and licences are encrypted under `backend/private_documents/`, outside public media. Uploads accept JPEG, PNG or WebP up to 5MB, reject unreadable/undersized/blank images and apply a basic blur heuristic. Reviewers still check cropping, legibility and authenticity manually.
+- Private document links expire after 60 seconds. Owners and authorised reviewers can request them, access is audited, and delivery responses prohibit caching. A signed link can be used by anyone holding it until it expires; treat it as confidential.
+- Existing public local photos under `backend/media/` continue to work.
+
+The previous SQLite records were copied to the configured PostgreSQL database. SQLite remains a local backup/development option with `USE_POSTGRES=False`; database exclusion and immutable-history triggers require PostgreSQL. No customer policy values were filled from guesses.
+
+## WhatsApp phone verification
+
+The live adapter uses Meta WhatsApp Cloud API authentication templates with a copy-code button. Configure:
+
+```dotenv
+OTP_BACKEND=whatsapp
+WHATSAPP_PHONE_NUMBER_ID=
+WHATSAPP_ACCESS_TOKEN=
+WHATSAPP_OTP_TEMPLATE=
+WHATSAPP_API_VERSION=
+WHATSAPP_TEMPLATE_LANGUAGE=en
+```
+
+The template must already be approved. Set an API version supported by your Meta application. Codes expire after five minutes, are stored as hashes, and cannot be reused. Requests and attempts are rate-limited. Missing credentials produce an unavailable message, without marking a phone verified.
+
+For local testing only, `OTP_BACKEND=development` together with `DEBUG=True` returns a development code to the authenticated customer. No message is sent. With `DEBUG=False`, codes are never returned. Live WhatsApp delivery remains unverified until credentials and the approved template are supplied.
+
+## Policies and workflow jobs
+
+Section 16 decisions remain pending. Owner policy settings start empty. Do not enter unapproved values.
+
+Document submission needs an approved privacy notice/version and retention period. KYC approval also requires driver eligibility rules, staffed hours and an explicit guarantor decision for the selected vehicle category. Category JSON uses the exact category name with a boolean `guarantor_required`; optional `minimum_age` and `minimum_licence_months` override general eligibility. Cross-border approval remains blocked pending the travel policy.
+
+The KYC timer counts staffed minutes in Africa/Nairobi, preserving its deadline through corrections. The review records manual NTSA verification; no automated government lookup or face matching is implemented. Approved customers can reuse unchanged valid documents for a new draft, with another booking-specific review.
+
+Run this job every minute using your process scheduler:
+
+```bash
+python manage.py process_workflow
+```
+
+For local development, `python manage.py process_workflow --watch` keeps the worker running every 60 seconds.
+
+It expires unpaid holds and produces 15-/25-minute staff inbox alerts and missed-review records. Availability requests also expire stale holds. Holds use `PAYMENT_HOLD_MINUTES` (30 by default). Manual verification must finish before the hold ends; submitting a code does not extend it. KYC outcome notifications currently appear in customer inboxes; proactive WhatsApp status notifications need separately approved templates.
+
+The active payment method is **manual M-Pesa Send Money** (October 23, 2026). Customers review the server-calculated amount, send money to the dedicated receiving phone, and submit their M-Pesa transaction code. Finance checks the code, recipient, amount and timestamp in the receiving account at `/dashboard/payments`. Only a verified receipt that passes KYC, availability and hold checks confirms the booking. The application adds no processing surcharge; Safaricom transfer charges are separate.
+
+Configure `PAYMENT_PROVIDER=manual_mpesa` and `MPESA_RECEIVING_PHONE=+254716741039` in `backend/.env`. No Daraja or Paystack credentials are needed for this manual flow. Paystack checkout and its webhook are inactive. Existing Paystack records remain preserved. Manual transactions do not use the Paystack reconciliation worker. Run the workflow worker to expire holds normally.
+
+An owner must record the approved security-deposit decision at `/dashboard/payment-settings` before customers can obtain payment instructions. Pending policies remain blocked. Late payments, amount mismatches and changed KYC/availability retain their verified receipts for finance review, without automatically confirming a booking or issuing a refund. See [payment operations](docs/PAYMENTS.md).
+
+Physical release remains disabled until the handover module is implemented. PostgreSQL prevents overlapping reservations and protects payment ledger/history records against updates and deletion.
+
+Retention settings currently gate collection and record the approved period. Automated retention deletion and access/correction/deletion request handling still need a dedicated implementation before live personal-data collection. Private-file hosting must remain outside publicly served directories. Production additionally needs HTTPS, a shared rate-limit cache, database/backups, and a scheduled workflow worker.
+
+## Verification
+
+```bash
+cd backend
+python manage.py check
+python manage.py makemigrations --check --dry-run
+python manage.py test apps.accounts apps.core apps.rentals apps.workflow apps.payments
+```
+
+The database user running tests needs permission to create a separate test database. PostgreSQL integration tests cover direct-write overlap protection and immutable audit records; they are skipped under SQLite.
+
+```bash
+cd frontend
+npm run typecheck
+npm run lint
 npm run build
 ```
 
-If the build succeeds, push to GitHub:
-
-```bash
-git add .
-git commit -m "Prepare production deployment"
-git push
-```
-
-Vercel will automatically redeploy if connected to the GitHub repository.
-
----
-
-## Vercel Environment Variables
-
-In Vercel, add:
-
-```env
-NEXT_PUBLIC_CONVEX_URL=your_convex_deployment_url
-```
-
-Path:
-
-```txt
-Vercel Dashboard
-→ Project
-→ Settings
-→ Environment Variables
-```
-
-After adding or changing environment variables, redeploy the project.
-
----
-
-## Production Checklist
-
-Before going live, confirm:
-
-* [ ] Homepage loads correctly.
-* [ ] Public cars page loads correctly.
-* [ ] Car details page opens correctly.
-* [ ] Contact form submits booking requests.
-* [ ] WhatsApp button opens correctly.
-* [ ] FAQ page works.
-* [ ] Services page works.
-* [ ] Admin login works.
-* [ ] Dashboard loads after login.
-* [ ] Admin can add cars.
-* [ ] Admin can update cars.
-* [ ] Admin can change car status.
-* [ ] Admin can view bookings.
-* [ ] Admin can update booking status.
-* [ ] Admin settings update business details.
-* [ ] Website works on mobile.
-* [ ] Website works on tablet.
-* [ ] Website works on laptop.
-* [ ] Website works on desktop.
-* [ ] `npm run build` passes successfully.
-
----
-
-## Common Issues and Fixes
-
-### `/faq` returns 404
-
-Make sure this file exists:
-
-```txt
-src/app/faq/page.tsx
-```
-
-Then restart the development server.
-
----
-
-### Admin login fails
-
-Check that `ADMIN_PASSWORD` is set in Convex:
-
-```bash
-npx convex env list
-```
-
-If missing, set it:
-
-```bash
-npx convex env set ADMIN_PASSWORD "your_admin_password"
-```
-
----
-
-### Convex URL error on Vercel
-
-Make sure this is added to Vercel environment variables:
-
-```env
-NEXT_PUBLIC_CONVEX_URL=your_convex_deployment_url
-```
-
-Then redeploy.
-
----
-
-### Next/Image warning about `sizes`
-
-If an image uses `fill`, add `sizes`.
-
-Example:
-
-```tsx
-<Image
-  src="/logo.png"
-  alt="Logo"
-  fill
-  sizes="112px"
-  className="object-contain"
-/>
-```
-
----
-
-### Image 404 errors
-
-Make sure the image exists in the `public/` folder.
-
-Example:
-
-```txt
-public/lexus.jpeg
-public/familycar.jpg
-public/mercedes.jpg
-```
-
-Then reference it like:
-
-```tsx
-<Image src="/lexus.jpeg" alt="Car" fill sizes="100vw" />
-```
-
----
-
-### Dashboard looks squeezed
-
-Use responsive grid layouts and avoid forcing side panels beside the main content too early.
-
-Recommended pattern:
-
-```tsx
-<section className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_420px]">
-```
-
-This keeps the right column beside the main content only on very large screens and stacks it below on smaller screens.
-
----
-
-## Code Quality Guidelines
-
-When editing the project:
-
-* Keep TypeScript strict.
-* Avoid `any`.
-* Keep components reusable where possible.
-* Use clear file names.
-* Keep Convex logic separate from UI components.
-* Do not expose admin credentials in frontend code.
-* Do not remove admin session checks.
-* Use accessible button labels.
-* Keep mobile responsiveness in mind.
-* Run `npm run build` before deployment.
-
----
-
-## Future Improvements
-
-Possible improvements for future versions:
-
-* Customer account system.
-* Online payments.
-* Booking calendar.
-* Automatic availability checking by date.
-* Email confirmations.
-* SMS notifications.
-* Admin user roles.
-* Analytics dashboard.
-* Search and filter improvements.
-* Better booking invoice/receipt system.
-* Customer reviews from real database records.
-* Image gallery for each car.
-* SEO metadata for each public page.
-* Sitemap and robots.txt.
-* Blog or travel guide section.
-
----
-
-## Author
-
-MoBri Car Hire project developed for a Nairobi-based car rental business.
-
-Developer:
-
-```txt
-Humphrey Morara
-```
-
----
-
-## License
-
-This project is private and intended for MoBri Car Hire business use.
-
-carrental/
-│
-├── frontend/
-│   ├── src/
-│   ├── public/
-│   ├── package.json
-│   ├── next.config.ts
-│   └── ...
-│
-├── backend/
-│   ├── manage.py
-│   ├── config/
-│   ├── apps/
-│   │   ├── accounts/
-│   │   ├── customers/
-│   │   ├── fleet/
-│   │   ├── bookings/
-│   │   ├── kyc/
-│   │   ├── payments/
-│   │   └── ...
-│   ├── requirements.txt
-│   └── .env.example
-│
-├── docs/
-├── README.md
-├── .gitignore
-└── docker-compose.yml   # optional later
+The specification is in `docs/Movara Car Hire Car Hire System Specification v1.1.md`.

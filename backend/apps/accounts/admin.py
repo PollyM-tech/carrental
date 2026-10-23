@@ -106,3 +106,13 @@ class UserAdmin(BaseUserAdmin):
             },
         ),
     )
+
+    def get_search_results(self, request, queryset, search_term):
+        if search_term and "@" in search_term:
+            return queryset.filter(email=search_term.strip()), False
+        return queryset, False
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        from apps.workflow.services import audit
+        audit(request.user, "staff.account_updated" if change else "staff.account_created", obj)

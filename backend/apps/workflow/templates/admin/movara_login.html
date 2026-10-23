@@ -1,0 +1,6 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<h1>Movara staff sign in</h1>
+<p>Enroll your authenticator through the <a href="http://localhost:3000/admin-login">Movara staff login</a> before signing in here.</p>
+<form method="post">{% csrf_token %}{{ form.as_p }}<input type="hidden" name="next" value="{{ next }}"><button type="submit">Sign in</button></form>
+{% endblock %}

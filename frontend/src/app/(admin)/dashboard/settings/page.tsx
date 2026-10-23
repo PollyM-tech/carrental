@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import {
   Building2,
@@ -13,7 +13,7 @@ import {
   Smartphone,
 } from "lucide-react";
 
-import { api } from "@convex/_generated/api";
+import { api } from "@/lib/api";
 import AdminHeader from "@/components/admin/AdminHeader";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 
@@ -34,7 +34,7 @@ function getAdminTokenSnapshot() {
     return undefined;
   }
 
-  return localStorage.getItem("mobri_admin_token");
+  return localStorage.getItem("movara_admin_token");
 }
 
 function getAdminTokenServerSnapshot() {
@@ -50,7 +50,7 @@ export default function DashboardSettingsPage() {
     getAdminTokenServerSnapshot,
   );
 
-  const settings = useQuery(api.settings.getSettings);
+  const settings = useQuery(api.settings.getSettings, typeof adminToken === "string" ? { adminToken } : "skip");
   const updateSettings = useMutation(api.settings.updateSettings);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -58,31 +58,21 @@ export default function DashboardSettingsPage() {
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  const [form, setForm] = useState({
-    businessName: "MoBri Car Hire",
-    whatsappNumber: "254716741039",
-    phoneNumber: "0716 741 039",
-    email: "info@mobricarhire.co.ke",
-    location: "Nairobi, Kenya",
-  });
+  const defaults = {
+    businessName: "Movara Car Hire", whatsappNumber: "254716741039",
+    phoneNumber: "0716 741 039", email: "movaracarhire@gmail.com", location: "Nairobi, Kenya",
+  };
+  const [draft, setForm] = useState<typeof defaults | null>(null);
+  const form = draft ?? (settings ? {
+    businessName: settings.businessName, whatsappNumber: settings.whatsappNumber,
+    phoneNumber: settings.phoneNumber ?? "", email: settings.email ?? "", location: settings.location ?? "",
+  } : defaults);
 
   useEffect(() => {
     if (adminToken === null) {
       router.replace("/admin-login");
     }
   }, [adminToken, router]);
-
-  useEffect(() => {
-    if (!settings) return;
-
-    setForm({
-      businessName: settings.businessName ?? "MoBri Car Hire",
-      whatsappNumber: settings.whatsappNumber ?? "254716741039",
-      phoneNumber: settings.phoneNumber ?? "0716 741 039",
-      email: settings.email ?? "info@mobricarhire.co.ke",
-      location: settings.location ?? "Nairobi, Kenya",
-    });
-  }, [settings]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -217,7 +207,7 @@ export default function DashboardSettingsPage() {
                       label="Business Name"
                       icon={Building2}
                       value={form.businessName}
-                      placeholder="MoBri Car Hire"
+                      placeholder="Movara Car Hire"
                       onChange={(value) =>
                         setForm({ ...form, businessName: value })
                       }
@@ -247,7 +237,7 @@ export default function DashboardSettingsPage() {
                       label="Email Address"
                       icon={Mail}
                       value={form.email}
-                      placeholder="info@mobricarhire.co.ke"
+                      placeholder="info@movaracarhire.co.ke"
                       onChange={(value) => setForm({ ...form, email: value })}
                     />
 
@@ -269,10 +259,10 @@ export default function DashboardSettingsPage() {
                       type="button"
                       onClick={() =>
                         setForm({
-                          businessName: "MoBri Car Hire",
+                          businessName: "Movara Car Hire",
                           whatsappNumber: "254716741039",
                           phoneNumber: "0716 741 039",
-                          email: "info@mobricarhire.co.ke",
+                          email: "info@movaracarhire.co.ke",
                           location: "Nairobi, Kenya",
                         })
                       }

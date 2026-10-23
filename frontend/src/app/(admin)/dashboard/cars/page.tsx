@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { useQuery } from "convex/react";
+import { useQuery } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
@@ -13,8 +13,8 @@ import {
   Wrench,
 } from "lucide-react";
 
-import { api } from "@convex/_generated/api";
-import type { Doc } from "@convex/_generated/dataModel";
+import { api } from "@/lib/api";
+import type { Doc } from "@/lib/types";
 import CarForm from "@/components/admin/CarForm";
 import CarsTable from "@/components/admin/CarsTable";
 import AdminHeader from "@/components/admin/AdminHeader";
@@ -58,7 +58,7 @@ function getAdminTokenSnapshot() {
     return undefined;
   }
 
-  return localStorage.getItem("mobri_admin_token");
+  return localStorage.getItem("movara_admin_token");
 }
 
 function getAdminTokenServerSnapshot() {

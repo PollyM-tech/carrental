@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "convex/react";
+import { useMutation } from "@/lib/api";
 import { X, ImagePlus } from "lucide-react";
 
-import { api } from "../../../convex/_generated/api";
-import type { Doc, Id } from "../../../convex/_generated/dataModel";
+import { uploadCarImage, api } from "@/lib/api";
+import type { Doc } from "@/lib/types";
 
 type CarStatus = "available" | "booked" | "maintenance" | "unavailable";
 
@@ -22,7 +22,7 @@ const statusOptions: { label: string; value: CarStatus }[] = [
 ];
 
 function getAdminToken() {
-  const token = localStorage.getItem("mobri_admin_token");
+  const token = localStorage.getItem("movara_admin_token");
 
   if (!token) {
     throw new Error("Admin session missing. Please log in again.");
@@ -34,7 +34,6 @@ function getAdminToken() {
 export default function CarForm({ car, onClose }: CarFormProps) {
   const addCar = useMutation(api.cars.addCar);
   const updateCar = useMutation(api.cars.updateCar);
-  const generateUploadUrl = useMutation(api.cars.generateUploadUrl);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -42,6 +41,7 @@ export default function CarForm({ car, onClose }: CarFormProps) {
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
 
   const [form, setForm] = useState({
+    mileage: String(car?.mileage ?? 0),
     name: car?.name ?? "",
     brand: car?.brand ?? "",
     model: car?.model ?? "",
@@ -86,25 +86,7 @@ export default function CarForm({ car, onClose }: CarFormProps) {
       return car?.imageStorageId ?? undefined;
     }
 
-    const uploadUrl = await generateUploadUrl({ adminToken });
-
-    const uploadResult = await fetch(uploadUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": selectedImageFile.type,
-      },
-      body: selectedImageFile,
-    });
-
-    if (!uploadResult.ok) {
-      throw new Error("Image upload failed. Please try again.");
-    }
-
-    const { storageId } = (await uploadResult.json()) as {
-      storageId: Id<"_storage">;
-    };
-
-    return storageId;
+    return uploadCarImage(selectedImageFile, adminToken);
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -118,6 +100,7 @@ export default function CarForm({ car, onClose }: CarFormProps) {
       const imageStorageId = await uploadSelectedImage(adminToken);
 
       const payload = {
+        mileage: Number(form.mileage),
         name: form.name.trim(),
         brand: form.brand.trim() || undefined,
         model: form.model.trim() || undefined,
@@ -246,7 +229,7 @@ export default function CarForm({ car, onClose }: CarFormProps) {
                   Choose Image
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp"
                     onChange={handleImageSelect}
                     className="hidden"
                   />
@@ -285,6 +268,7 @@ export default function CarForm({ car, onClose }: CarFormProps) {
           </div>
 
           <div className="grid gap-5 md:grid-cols-2">
+            <Input label="Odometer (km)" type="number" value={form.mileage} onChange={(value) => setForm({ ...form, mileage: value })} />
             <Input
               label="Car Name"
               value={form.name}

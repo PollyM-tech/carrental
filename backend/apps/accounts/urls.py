@@ -4,6 +4,8 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 
+from apps.workflow.auth import CustomerTokenSerializer
+
 from .views import LogoutView, MeView, RegisterView
 
 
@@ -16,7 +18,7 @@ urlpatterns = [
 
     path(
         "login/",
-        TokenObtainPairView.as_view(),
+        TokenObtainPairView.as_view(serializer_class=CustomerTokenSerializer),
         name="login",
     ),
 

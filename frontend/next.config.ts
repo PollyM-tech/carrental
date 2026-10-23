@@ -5,13 +5,7 @@ const nextConfig: NextConfig = {
 
   images: {
     qualities: [75, 90],
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "gregarious-rooster-215.eu-west-1.convex.cloud",
-        pathname: "/api/storage/**",
-      },
-    ],
+    remotePatterns: [{ protocol: "https", hostname: "res.cloudinary.com", pathname: "/**" }],
   },
 
   async headers() {

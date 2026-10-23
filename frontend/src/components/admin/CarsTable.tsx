@@ -1,11 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { useMutation } from "convex/react";
+import { useMutation } from "@/lib/api";
 import { Edit, Star, Trash2, Wrench } from "lucide-react";
 
-import { api } from "../../../convex/_generated/api";
-import type { Doc } from "../../../convex/_generated/dataModel";
+import { api } from "@/lib/api";
+import type { Doc } from "@/lib/types";
 
 type CarWithDisplayImage = Doc<"cars"> & {
   displayImageUrl?: string | null;
@@ -33,7 +33,7 @@ const statusClassName: Record<CarStatus, string> = {
 };
 
 function getAdminToken() {
-  const token = localStorage.getItem("mobri_admin_token");
+  const token = localStorage.getItem("movara_admin_token");
 
   if (!token) {
     throw new Error("Admin session missing. Please log in again.");

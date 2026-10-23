@@ -1,0 +1,42 @@
+# Manual M-Pesa payments
+
+The user selected manual Send Money on October 23, 2026. The dedicated receiving number is +254716741039. This is a personal-number transfer flow, without STK Push. The app adds no surcharge; customers pay Safaricom's applicable transfer charges separately.
+
+## Setup
+
+Set these backend environment variables:
+
+```
+PAYMENT_PROVIDER=manual_mpesa
+MPESA_RECEIVING_PHONE=+254716741039
+```
+
+Restart Django after changing configuration. The receiving number is snapshotted on each payment quote so changes do not silently redirect an existing quote. No API consumer keys, passkey, payment webhook or payment worker are required for manual collection. Existing Paystack code/records remain, but hosted checkout and webhook ingestion are disabled while the active provider is manual M-Pesa.
+
+The owner must first approve the security-deposit policy under `/dashboard/payment-settings`: online, at handover, or explicitly none, with category amounts where required and an approval reason. No unapproved deposit decision is assumed. The other KYC policies and verified phone checks still apply.
+
+## Customer flow
+
+1. Complete booking-specific KYC approval.
+2. Open the booking under `/account` and review the amount.
+3. Use M-Pesa Send Money to the displayed phone number, check the expected recipient name in M-Pesa and send the exact amount. The expected recipient name has not been supplied to the app; contact Movara if unsure.
+4. Submit the ten-character M-Pesa code and confirm the displayed amount/recipient.
+5. Wait for finance verification, then refresh payment status. A code submission is a claim, not proof of payment. Do not pay twice.
+
+An expired quote must not be used to send new funds. An already-paid customer can still submit the code from their existing quote for reconciliation, including after hold expiry. Holds retain `PAYMENT_HOLD_MINUTES` (30 by default); submitting a code does not extend them. Finance must verify before expiry for automatic confirmation.
+
+## Finance flow
+
+Use a finance-role account or an owner/admin account and open `/dashboard/payments`.
+
+Check the exact transaction code in the receiving phone's M-Pesa account/statement. Verify recipient, amount actually received and payment timestamp; do not rely on a customer screenshot or SMS forwarded by the customer. Enter the amount in KES, the actual Nairobi payment time and your verification findings. Tick the receiving-account check and record the verified receipt. If no receipt exists, record a reason and reject the claim. A rejected code does not prove no money was sent; customers should contact finance before retrying.
+
+Exact receipts confirm only if the booking hold remains unchanged/unexpired, KYC/customer details remain valid, the vehicle remains available and the booking is unpaid and at the payment stage. A globally unique `MPESA-<code>` receipt prevents one transaction funding multiple bookings. Customer claims are not globally unique, so an unverified claim cannot monopolise someone else's real receipt code.
+
+Late receipts, incorrect amounts and changed eligibility create immutable receipts in finance review without reserving the car. Follow up with the customer and record finance notes. Refunds, balances and alternative bookings require manual handling while the business policies are pending; this module does not issue refunds or override holds. Actual Safaricom fees are not returned by an API in this flow and are stored as unknown, rather than invented.
+
+Quotes, claims, receipt events, allocations and finance notes are append-only, with PostgreSQL triggers backing application guards. A verified receipt cannot be edited or rejected afterwards. Follow-up notes preserve corrections and reconciliation findings.
+
+## Future automation
+
+Direct Daraja STK Push requires an enabled merchant Paybill or Buy Goods Till, consumer key/secret, shortcode, passkey and public callback URL. A dedicated ordinary phone number alone cannot receive direct Daraja STK collections. Paystack can be reconsidered after account approval; changing the active provider requires corresponding checkout UI and fee-policy review.

@@ -31,7 +31,7 @@ export default function Hero() {
   return (
     <section
       id="home"
-      aria-label="MoBri Car Hire introduction"
+      aria-label="Movara Car Hire introduction"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onFocusCapture={() => setIsPaused(true)}

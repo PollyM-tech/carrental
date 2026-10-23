@@ -26,9 +26,7 @@ export default function AdminHeader({
   const router = useRouter();
 
   function handleLogout() {
-    // Temporary cleanup of the legacy admin session.
-    // Django authentication will replace this.
-    localStorage.removeItem("mobri_admin_token");
+    localStorage.removeItem("movara_admin_token");
 
     router.replace("/admin-login");
     router.refresh();

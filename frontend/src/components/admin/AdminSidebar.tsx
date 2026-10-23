@@ -1,6 +1,8 @@
 
 "use client";
 
+import { useEffect, useState } from "react";
+import { workflow } from "@/lib/workflow";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -19,6 +21,13 @@ type AdminSidebarProps = {
 };
 
 const navLinks = [
+  { label: "Payments", href: "/dashboard/payments", icon: CalendarDays },
+  { label: "Payment policy", href: "/dashboard/payment-settings", icon: Settings },
+  { label: "Document review", href: "/dashboard/kyc", icon: CalendarDays },
+  { label: "Fleet compliance", href: "/dashboard/fleet", icon: CarFront },
+  { label: "Staff access", href: "/dashboard/team", icon: Settings },
+  { label: "Audit history", href: "/dashboard/audit", icon: CalendarDays },
+  { label: "Approved policies", href: "/dashboard/policies", icon: Settings },
   {
     label: "Overview",
     href: "/dashboard",
@@ -46,6 +55,17 @@ export default function AdminSidebar({
   onClose,
 }: AdminSidebarProps) {
   const pathname = usePathname();
+  const [access, setAccess] = useState<{ owner: boolean; roles: string[] } | null>(null);
+  useEffect(() => { void workflow<{ owner: boolean; roles: string[] }>("workflow/access/", { staff: true }).then(setAccess).catch(() => {}); }, []);
+  function visible(href: string) {
+    if (access?.owner) return true;
+    if (["/dashboard/team", "/dashboard/audit", "/dashboard/policies", "/dashboard/settings", "/dashboard/payment-settings"].includes(href)) return false;
+    if (["/dashboard/cars", "/dashboard/fleet"].includes(href)) return access?.roles.includes("fleet_manager");
+    if (href === "/dashboard/payments") return access?.roles.includes("finance");
+    if (href === "/dashboard/bookings") return access?.roles.some(role => ["front_desk", "finance", "kyc_reviewer"].includes(role));
+    if (href === "/dashboard/kyc") return access?.roles.includes("kyc_reviewer");
+    return true;
+  }
 
   return (
     <>
@@ -120,7 +140,7 @@ export default function AdminSidebar({
             aria-label="Admin navigation"
             className="flex-1 space-y-1 px-3 py-3"
           >
-            {navLinks.map((link) => {
+            {navLinks.filter(link => visible(link.href)).map((link) => {
               const Icon = link.icon;
 
               const isActive =
