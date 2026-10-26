@@ -61,7 +61,7 @@ def vehicle_available(car, start, end, exclude=None):
 def staffed_due(start, minutes=30):
     policy = Policy.objects.filter(pk=1).first()
     if not policy or not policy.staffed_start or not policy.staffed_end or not policy.staffed_weekdays:
-        return None
+        return start + timedelta(minutes=minutes)
     current = timezone.localtime(start, ZoneInfo("Africa/Nairobi"))
     remaining = minutes * 60
     for _ in range(370):

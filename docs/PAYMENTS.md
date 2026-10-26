@@ -1,6 +1,6 @@
 # Manual M-Pesa payments
 
-The user selected manual Send Money on October 23, 2026. The dedicated receiving number is +254716741039. This is a personal-number transfer flow, without STK Push. The app adds no surcharge; customers pay Safaricom's applicable transfer charges separately.
+Updated October 26, 2026: new payments use a Buy Goods till. The till number is awaiting the client; do not reuse the contact phone as a till. Manual transaction-code submission requires finance verification before confirmation. STK Push is requested but remains pending merchant credentials and integration; no STK prompt is currently sent. The app adds no surcharge.
 
 ## Setup
 
@@ -8,10 +8,10 @@ Set these backend environment variables:
 
 ```
 PAYMENT_PROVIDER=manual_mpesa
-MPESA_RECEIVING_PHONE=+254716741039
+MPESA_TILL_NUMBER=<client-supplied-till>
 ```
 
-Restart Django after changing configuration. The receiving number is snapshotted on each payment quote so changes do not silently redirect an existing quote. No API consumer keys, passkey, payment webhook or payment worker are required for manual collection. Existing Paystack code/records remain, but hosted checkout and webhook ingestion are disabled while the active provider is manual M-Pesa.
+Restart Django after changing configuration. The till number is snapshotted on each payment quote so changes do not silently redirect an existing quote. No API consumer keys, passkey, payment webhook or payment worker are required for manual collection. Existing Paystack code/records remain, but hosted checkout and webhook ingestion are disabled while the active provider is manual M-Pesa.
 
 The owner must first approve the security-deposit policy under `/dashboard/payment-settings`: online, at handover, or explicitly none, with category amounts where required and an approval reason. No unapproved deposit decision is assumed. The other KYC policies and verified phone checks still apply.
 
@@ -19,7 +19,7 @@ The owner must first approve the security-deposit policy under `/dashboard/payme
 
 1. Complete booking-specific KYC approval.
 2. Open the booking under `/account` and review the amount.
-3. Use M-Pesa Send Money to the displayed phone number, check the expected recipient name in M-Pesa and send the exact amount. The expected recipient name has not been supplied to the app; contact Movara if unsure.
+3. Use M-Pesa → Lipa na M-Pesa → Buy Goods and Services with the displayed till, check the expected recipient name in M-Pesa and send the exact amount. The expected recipient name has not been supplied to the app; contact Movara if unsure.
 4. Submit the ten-character M-Pesa code and confirm the displayed amount/recipient.
 5. Wait for finance verification, then refresh payment status. A code submission is a claim, not proof of payment. Do not pay twice.
 
@@ -29,7 +29,7 @@ An expired quote must not be used to send new funds. An already-paid customer ca
 
 Use a finance-role account or an owner/admin account and open `/dashboard/payments`.
 
-Check the exact transaction code in the receiving phone's M-Pesa account/statement. Verify recipient, amount actually received and payment timestamp; do not rely on a customer screenshot or SMS forwarded by the customer. Enter the amount in KES, the actual Nairobi payment time and your verification findings. Tick the receiving-account check and record the verified receipt. If no receipt exists, record a reason and reject the claim. A rejected code does not prove no money was sent; customers should contact finance before retrying.
+Check the exact transaction code in the merchant till's M-Pesa account/statement. Verify recipient, amount actually received and payment timestamp; do not rely on a customer screenshot or SMS forwarded by the customer. Enter the amount in KES, the actual Nairobi payment time and your verification findings. Tick the receiving-account check and record the verified receipt. If no receipt exists, record a reason and reject the claim. A rejected code does not prove no money was sent; customers should contact finance before retrying.
 
 Exact receipts confirm only if the booking hold remains unchanged/unexpired, KYC/customer details remain valid, the vehicle remains available and the booking is unpaid and at the payment stage. A globally unique `MPESA-<code>` receipt prevents one transaction funding multiple bookings. Customer claims are not globally unique, so an unverified claim cannot monopolise someone else's real receipt code.
 

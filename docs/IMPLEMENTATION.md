@@ -25,10 +25,10 @@ The first staff login requires adding a setup key to an authenticator app. Exist
 ## Pending external inputs and operations
 
 - Section 16 decisions remain unfilled. Privacy notice/retention approval gates submission. Driver eligibility, staffed hours and category guarantor rules gate KYC approval. Cross-border requests remain blocked.
-- WhatsApp live delivery needs the provider selection confirmed, server credentials and an approved authentication template. The current adapter targets Meta directly. It has been tested with mocks, not a live message.
+- Regular WhatsApp manual verification is implemented; Meta API integration is optional. A real customer/staff phone acceptance test remains. Contact number: 0716 741 039.
 - Run `python manage.py process_workflow` every minute to expire holds and generate staffed-hours review alerts. A process scheduler must run this in deployed environments; `--watch` is available locally.
-- Payment decision (October 23, 2026): use manual M-Pesa Send Money while Paystack is under review and no Daraja merchant shortcode is available. Customers submit transaction codes; finance verifies the receiving account before recording receipts and confirming eligible bookings. No application surcharge is added. Paystack checkout is inactive. Deposit terms still require owner approval. Contract/handover gates, returns and tracking remain outside this change. See `PAYMENTS.md`.
-- Before live collection: implement retention erasure and privacy-request operations against the approved retention policy; configure HTTPS, backups, encrypted-key backup, a shared rate-limit cache and private-file deployment storage.
+- Payment decision (October 26, 2026): new payments use Buy Goods Till, pending the client-supplied till number. STK Push is requested and awaits merchant configuration and integration. Existing phone-transfer quotes retain their original recipient. Customers submit transaction codes; finance verifies the receiving account before recording receipts and confirming eligible bookings. No application surcharge is added. Paystack checkout is inactive. Deposit terms still require owner approval. Contract/handover gates, returns and tracking remain outside this change. See `PAYMENTS.md`.
+- Seven-day operational document/KYC retention cleanup and customer access/correction/deletion requests are implemented; see `PRIVACY.md`. Before launch, approve the privacy notice, test production storage deletion/backup expiry, and configure HTTPS, backups, encrypted-key backup, a shared rate-limit cache and private-file deployment storage.
 
 ## Verification
 

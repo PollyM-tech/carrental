@@ -106,7 +106,8 @@ else:
     DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "db.sqlite3"}}
 DATA_ENCRYPTION_KEY = env("DATA_ENCRYPTION_KEY", default="")
 PRIVATE_DOCUMENT_ROOT = BASE_DIR / "private_documents"
-OTP_BACKEND = env("OTP_BACKEND", default="whatsapp")
+OTP_BACKEND = env("OTP_BACKEND", default="manual_whatsapp")
+BUSINESS_WHATSAPP_NUMBER = "254716741039"
 PAYMENT_HOLD_MINUTES = env.int("PAYMENT_HOLD_MINUTES", default=30)
 
 
@@ -201,3 +202,6 @@ PAYSTACK_CALLBACK_URL = env("PAYSTACK_CALLBACK_URL", default="http://localhost:3
 # Temporary manual M-Pesa collection; no application processing surcharge.
 PAYMENT_PROVIDER = env("PAYMENT_PROVIDER", default="manual_mpesa")
 MPESA_RECEIVING_PHONE = env("MPESA_RECEIVING_PHONE", default="+254716741039")
+
+# Buy Goods merchant till; leave blank until supplied by the business.
+MPESA_TILL_NUMBER = env("MPESA_TILL_NUMBER", default="")

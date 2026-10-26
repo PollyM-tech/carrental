@@ -1,5 +1,19 @@
 # Movara Car Hire: Car Hire System Specification
 
+## Confirmed client update — October 26, 2026
+
+This update supersedes conflicting requirements and open questions below.
+
+- Contracts will be signed manually until the client agrees to another signing method.
+- Payments will use an M-Pesa Buy Goods till, with STK Push and manual payment options. If STK fails, the customer can pay manually and enter the M-Pesa code. Receipt must be verified before confirming payment; a customer code alone is insufficient. The till number and merchant credentials are still pending. The implemented manual flow requires finance verification; STK integration is pending.
+- Every vehicle requires guarantor details and next-of-kin contacts/details.
+- The KYC review target is 30 minutes before vehicle handover. No staffed opening/closing hours have been supplied.
+- Minimum driver age is 22 years; minimum time holding a licence is two years. Additional drivers and chauffeur hire are available where applicable, with arrangements confirmed by staff. Cross-border travel is excluded for now.
+- Use flat daily or agreed market rates confirmed before payment. Weekend, seasonal and long-term pricing rules are not introduced.
+- Contact email: movaracarhire@gmail.com. The existing phone number remains unchanged.
+- Remaining policy decisions will be added when the client supplies details; no deposit, privacy, retention, refund or insurance terms are inferred from this update.
+
+
 Version 1.1 | Draft for review | October 22, 2026
 
 Prepared by: Pauline Moraa

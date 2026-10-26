@@ -25,10 +25,10 @@ def payment_event(attempt, kind, actor=None, **details):
 
 def calculate_quote(booking, channel):
     manual = settings.PAYMENT_PROVIDER == "manual_mpesa"
-    if manual and not settings.MPESA_RECEIVING_PHONE:
-        raise ValidationError("The M-Pesa receiving number has not been configured.")
+    if manual and not settings.MPESA_TILL_NUMBER:
+        raise ValidationError("The M-Pesa Buy Goods till number has not been configured. Contact Movara.")
     if manual and channel != "manual_mpesa":
-        raise ValidationError("Use manual M-Pesa Send Money for this booking.")
+        raise ValidationError("Use M-Pesa Buy Goods for this booking.")
     if not manual and channel not in ["mobile_money", "card"]:
         raise ValidationError("Choose M-Pesa or card.")
     mode = "manual_mpesa" if manual else settings.PAYSTACK_FEE_MODE
@@ -99,7 +99,7 @@ def create_quote(booking_id, customer, channel):
             return active
         values = calculate_quote(booking, channel)
         attempt = PaymentAttempt.objects.create(booking=booking, customer=customer, customer_email=customer.email,
-            provider=settings.PAYMENT_PROVIDER, receiving_phone=settings.MPESA_RECEIVING_PHONE if channel == "manual_mpesa" else "",
+            provider=settings.PAYMENT_PROVIDER, receiving_till=settings.MPESA_TILL_NUMBER if channel == "manual_mpesa" else "",
             kyc=case, reference="MOV-"+__import__("uuid").uuid4().hex, currency="KES", domain="manual" if channel == "manual_mpesa" else settings.PAYSTACK_MODE,
             channel=channel, hold_expires_at=booking.hold_expires_at,
             quote_expires_at=min(timezone.now()+timedelta(minutes=5), booking.hold_expires_at), **values)

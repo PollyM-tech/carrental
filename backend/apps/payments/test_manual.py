@@ -7,7 +7,7 @@ from . import tests as fixtures
 from .models import BookingPayment, PaymentAttempt, PaymentReceipt, ManualSubmission
 
 
-@override_settings(PAYMENT_PROVIDER="manual_mpesa", MPESA_RECEIVING_PHONE="+254716741039", PASSWORD_HASHERS=fixtures.FAST_PASSWORDS)
+@override_settings(PAYMENT_PROVIDER="manual_mpesa", MPESA_TILL_NUMBER="123456", PASSWORD_HASHERS=fixtures.FAST_PASSWORDS)
 class ManualPaymentTests(APITestCase):
     def setUp(self):
         fixtures.PaymentTests.setUp(self)
@@ -31,7 +31,7 @@ class ManualPaymentTests(APITestCase):
         quote = self.quote()
         self.assertEqual(quote["total_minor"], 1500000)
         self.assertEqual(quote["surcharge_minor"], 0)
-        self.assertEqual(quote["receiving_phone"], "+254716741039")
+        self.assertEqual(quote["receiving_till"], "123456")
         self.assertEqual(quote["domain"], "manual")
 
     def test_customer_code_never_confirms_booking(self):
@@ -136,3 +136,15 @@ class ManualPaymentTests(APITestCase):
         quote = self.quote()
         self.assertEqual(self.submit(quote, "bad").status_code, 400)
         self.assertEqual(self.client.post(self.base+f"manual/{quote['id']}/submit/", {"transaction_code": "UK1234ABCD"}).status_code, 400)
+
+    @override_settings(MPESA_TILL_NUMBER="")
+    def test_missing_till_blocks_new_quotes(self):
+        response = self.client.post(self.base+f"bookings/{self.booking.pk}/", {}, format="json")
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(PaymentAttempt.objects.exists())
+
+    def test_till_is_snapshotted(self):
+        quote = self.quote()
+        with override_settings(MPESA_TILL_NUMBER="654321"):
+            attempt = PaymentAttempt.objects.get(pk=quote["id"])
+            self.assertEqual(attempt.receiving_till, "123456")

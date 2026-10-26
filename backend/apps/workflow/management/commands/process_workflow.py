@@ -22,6 +22,8 @@ class Command(BaseCommand):
 
     def tick(self):
         expire_holds()
+        from apps.workflow.privacy import run_retention
+        run_retention()
         now = timezone.now()
         for pk in KycCase.objects.filter(status__in=["submitted", "in_review", "needs_correction"]).values_list("pk", flat=True):
             with transaction.atomic():

@@ -32,6 +32,7 @@ class StaffAuthenticator(models.Model):
 
 
 class CustomerProfile(models.Model):
+    updated_at = models.DateTimeField(auto_now=True)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     details_encrypted = models.TextField(blank=True)
     id_hash = models.CharField(max_length=64, blank=True, db_index=True)
@@ -43,6 +44,7 @@ class CustomerProfile(models.Model):
 
 
 class PhoneChallenge(models.Model):
+    method = models.CharField(max_length=20, default="otp")
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     code_hash = models.CharField(max_length=128)
     phone_hash = models.CharField(max_length=64)
@@ -54,15 +56,15 @@ class PhoneChallenge(models.Model):
 
 class Policy(models.Model):
     id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
-    minimum_age = models.PositiveSmallIntegerField(null=True, blank=True)
-    minimum_licence_months = models.PositiveSmallIntegerField(null=True, blank=True)
+    minimum_age = models.PositiveSmallIntegerField(default=22, null=True, blank=True)
+    minimum_licence_months = models.PositiveSmallIntegerField(default=24, null=True, blank=True)
     staffed_start = models.TimeField(null=True, blank=True)
     staffed_end = models.TimeField(null=True, blank=True)
     staffed_weekdays = models.JSONField(default=list, blank=True)
     category_rules = models.JSONField(default=dict, blank=True)
     privacy_notice_text = models.TextField(blank=True)
     privacy_notice_version = models.CharField(max_length=50, blank=True)
-    retention_days = models.PositiveIntegerField(null=True, blank=True)
+    retention_days = models.PositiveIntegerField(default=7, null=True, blank=True)
 
 
 class PrivateDocument(models.Model):
@@ -140,3 +142,28 @@ class VehicleBlock(models.Model):
 
     class Meta:
         constraints = [models.CheckConstraint(condition=models.Q(ends_on__gt=models.F("starts_on")), name="block_valid_dates")]
+
+
+class DataRequest(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    kind = models.CharField(max_length=20, choices=[(x, x) for x in ["access", "correction", "deletion"]])
+    details_encrypted = models.TextField(blank=True)
+    status = models.CharField(max_length=30, default="pending")
+    resolution = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    resolved_at = models.DateTimeField(null=True)
+    reviewer = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.PROTECT, related_name="data_reviews")
+
+
+class DataHold(models.Model):
+    customer = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    reason_encrypted = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="data_holds")
+
+
+class DocumentErasure(models.Model):
+    document = models.OneToOneField(PrivateDocument, primary_key=True, on_delete=models.PROTECT, related_name="erasure")
+    created_at = models.DateTimeField(auto_now_add=True)
+    reason = models.CharField(max_length=30)

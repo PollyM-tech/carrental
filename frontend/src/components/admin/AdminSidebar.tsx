@@ -21,6 +21,8 @@ type AdminSidebarProps = {
 };
 
 const navLinks = [
+  { label: "Phone verification", href: "/dashboard/phone-verification", icon: CalendarDays },
+  { label: "Data requests", href: "/dashboard/data-requests", icon: Settings },
   { label: "Payments", href: "/dashboard/payments", icon: CalendarDays },
   { label: "Payment policy", href: "/dashboard/payment-settings", icon: Settings },
   { label: "Document review", href: "/dashboard/kyc", icon: CalendarDays },
@@ -59,10 +61,11 @@ export default function AdminSidebar({
   useEffect(() => { void workflow<{ owner: boolean; roles: string[] }>("workflow/access/", { staff: true }).then(setAccess).catch(() => {}); }, []);
   function visible(href: string) {
     if (access?.owner) return true;
-    if (["/dashboard/team", "/dashboard/audit", "/dashboard/policies", "/dashboard/settings", "/dashboard/payment-settings"].includes(href)) return false;
+    if (["/dashboard/team", "/dashboard/audit", "/dashboard/policies", "/dashboard/settings", "/dashboard/payment-settings", "/dashboard/data-requests"].includes(href)) return false;
     if (["/dashboard/cars", "/dashboard/fleet"].includes(href)) return access?.roles.includes("fleet_manager");
     if (href === "/dashboard/payments") return access?.roles.includes("finance");
     if (href === "/dashboard/bookings") return access?.roles.some(role => ["front_desk", "finance", "kyc_reviewer"].includes(role));
+    if (href === "/dashboard/phone-verification") return access?.roles.includes("kyc_reviewer");
     if (href === "/dashboard/kyc") return access?.roles.includes("kyc_reviewer");
     return true;
   }

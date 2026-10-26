@@ -46,13 +46,20 @@ def profile_data(user):
 
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
+@transaction.atomic
 def profile(request):
+    get_user_model().objects.select_for_update().get(pk=request.user.pk, is_active=True)
     if request.method == "GET":
         return Response(profile_data(request.user))
+    approved = Policy.objects.filter(pk=1).first()
+    if not approved or not approved.privacy_notice_version or not approved.privacy_notice_text or not approved.retention_days:
+        raise serializers.ValidationError("Identity collection awaits an approved privacy notice and retention policy.")
     fields = ["full_name", "id_number", "date_of_birth", "licence_number", "licence_class", "licence_issued", "licence_expiry", "address", "next_of_kin_name", "next_of_kin_phone", "destination", "cross_border", "guarantor_name", "guarantor_phone", "id_expiry"]
     details = {key: request.data.get(key, "") for key in fields}
     if type(details["cross_border"]) is not bool:
         raise serializers.ValidationError("Cross-border travel must be true or false.")
+    if details["cross_border"]:
+        raise serializers.ValidationError("Cross-border travel is not available.")
     for key in ["guarantor_name", "guarantor_phone"]:
         if not isinstance(details[key], str) or len(details[key]) > 255:
             raise serializers.ValidationError("Guarantor details must be text up to 255 characters.")
@@ -92,6 +99,9 @@ def phone_request(request):
         phone = "+" + phone
     if not re.fullmatch(r"\+[1-9]\d{8,14}", phone):
         raise serializers.ValidationError("Enter a phone number with country code.")
+    if settings.OTP_BACKEND == "manual_whatsapp":
+        from .manual_phone import start
+        return Response(start(request.user, phone))
     code = f"{secrets.randbelow(1000000):06d}"
     if settings.OTP_BACKEND != "development" or not settings.DEBUG:
         try:
@@ -117,7 +127,7 @@ def phone_request(request):
 def phone_verify(request):
     valid = False
     with transaction.atomic():
-        obj = PhoneChallenge.objects.select_for_update().filter(user=request.user, consumed=False).order_by("-created_at").first()
+        obj = PhoneChallenge.objects.select_for_update().filter(user=request.user, consumed=False, method="otp").order_by("-created_at").first()
         if obj and obj.attempts < 5 and obj.expires_at > timezone.now() and obj.phone_hash == fingerprint(request.user.phone):
             obj.attempts += 1
             valid = check_password(str(request.data.get("code", "")), obj.code_hash)
@@ -172,6 +182,7 @@ def customer_bookings(request):
         customer = get_object_or_404(get_user_model(), email=request.data["customer_email"], is_active=True, is_staff=False)
     start, end = date_range(request.data)
     with transaction.atomic():
+        get_user_model().objects.select_for_update().get(pk=customer.pk, is_active=True)
         car = get_object_or_404(Car.objects.select_for_update(), pk=serializers.UUIDField().run_validation(request.data.get("carId")), deletedAt=None)
         if not vehicle_available(car, start, end):
             raise serializers.ValidationError("This vehicle is not available for the selected dates.")
@@ -195,17 +206,24 @@ def booking_progress(request, pk):
     booking = owned_booking(request.user, pk)
     case = KycCase.objects.filter(booking=booking).first()
     return Response({"booking": BookingSerializer(booking, context={"request": request}).data,
-        "documents": list(PrivateDocument.objects.filter(booking=booking).values("id", "kind", "created_at")),
+        "documents": list(PrivateDocument.objects.filter(booking=booking, erasure__isnull=True).values("id", "kind", "created_at")),
         "kyc": case_payload(case) if case else None,
         "history": list(booking.history.values("previous", "current", "reason", "created_at"))})
 
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
+@transaction.atomic
 def private_upload(request, pk):
+    get_user_model().objects.select_for_update().get(pk=request.user.pk, is_active=True)
     booking = owned_booking(request.user, pk)
     if booking.status not in ["draft", "kyc_needs_correction"]:
         raise serializers.ValidationError("Documents can only be added to a draft or correction request.")
+    policy = Policy.objects.filter(pk=1).first()
+    if not policy or not policy.privacy_notice_version or not policy.privacy_notice_text or not policy.retention_days:
+        raise serializers.ValidationError("Document collection awaits an approved privacy notice and retention policy.")
+    if request.data.get("consent") not in [True, "true"] or request.data.get("consent_version") != policy.privacy_notice_version:
+        raise serializers.ValidationError("Consent to the current privacy notice is required before uploading documents.")
     kind = request.data.get("kind")
     if kind not in dict(PrivateDocument._meta.get_field("kind").choices):
         raise serializers.ValidationError("Choose a document type.")
@@ -238,7 +256,7 @@ def private_upload(request, pk):
         path.chmod(0o600)
         with transaction.atomic():
             obj.save()
-            audit(request.user, "document.uploaded", obj)
+            audit(request.user, "document.uploaded", obj, "Privacy notice: " + policy.privacy_notice_version)
     except Exception:
         path.unlink(missing_ok=True)
         raise
@@ -246,7 +264,7 @@ def private_upload(request, pk):
 
 
 def permitted_document(user, pk):
-    document = get_object_or_404(PrivateDocument, pk=pk)
+    document = get_object_or_404(PrivateDocument, pk=pk, erasure__isnull=True)
     if document.owner_id != user.pk and not has_role(user, "kyc_reviewer"):
         from rest_framework.exceptions import PermissionDenied
         raise PermissionDenied()
@@ -274,7 +292,10 @@ def document_content(request, pk):
         return Response({"detail": "This document link expired."}, status=403)
     obj = permitted_document(user, pk)
     audit(user, "document.viewed", obj)
-    content = cipher().decrypt((Path(settings.PRIVATE_DOCUMENT_ROOT)/obj.storage_name).read_bytes())
+    try:
+        content = cipher().decrypt((Path(settings.PRIVATE_DOCUMENT_ROOT)/obj.storage_name).read_bytes())
+    except FileNotFoundError:
+        return Response({"detail": "This document is no longer available."}, status=410)
     response = HttpResponse(content, content_type=obj.content_type)
     response["Cache-Control"] = "private, no-store"
     response["Content-Disposition"] = 'inline; filename="document.jpg"'
@@ -286,12 +307,14 @@ def document_content(request, pk):
 @permission_classes([AllowAny])
 def public_policy(request):
     p = Policy.objects.filter(pk=1).first()
-    return Response({"privacy_notice_version": p.privacy_notice_version if p else "", "privacy_notice_text": p.privacy_notice_text if p else "", "retention_days": p.retention_days if p else None, "staffed_hours_configured": bool(p and p.staffed_start and p.staffed_end and p.staffed_weekdays), "message": "KYC review timing will be confirmed when staffed hours are approved." if not p or not p.staffed_start else "Documents are reviewed during staffed hours."})
+    return Response({"privacy_notice_version": p.privacy_notice_version if p else "", "privacy_notice_text": p.privacy_notice_text if p else "", "retention_days": p.retention_days if p else None, "staffed_hours_configured": bool(p and p.staffed_start and p.staffed_end and p.staffed_weekdays), "message": "KYC review target: 30 minutes, before vehicle handover."})
 
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
+@transaction.atomic
 def submit_kyc(request, pk):
+    get_user_model().objects.select_for_update().get(pk=request.user.pk, is_active=True)
     expire_holds()
     with transaction.atomic():
         booking = owned_booking(request.user, pk)
@@ -316,7 +339,7 @@ def submit_kyc(request, pk):
             raise serializers.ValidationError("The selected vehicle is no longer available for those dates.")
         documents = []
         for kind in ["id_front", "id_back", "licence_front", "licence_back"]:
-            obj = PrivateDocument.objects.filter(booking=booking, owner=request.user, kind=kind).order_by("-created_at").first()
+            obj = PrivateDocument.objects.filter(booking=booking, owner=request.user, kind=kind, erasure__isnull=True).order_by("-created_at").first()
             if not obj:
                 raise serializers.ValidationError(f"Upload {kind.replace('_', ' ')}.")
             documents.append(str(obj.pk))
@@ -373,23 +396,21 @@ def review_queue(request, pk=None):
             checks = request.data.get("checks", {})
             if decision == "approve":
                 policy = Policy.objects.filter(pk=1).first()
-                if not policy or policy.minimum_age is None or policy.minimum_licence_months is None or not policy.staffed_start or not policy.staffed_end or not policy.staffed_weekdays:
-                    raise serializers.ValidationError("Driver rules and staffed hours must be approved before KYC approval.")
+                if not policy or policy.minimum_age is None or policy.minimum_licence_months is None:
+                    raise serializers.ValidationError("Driver eligibility rules must be configured before KYC approval.")
                 details = decrypt(case.details_encrypted)
                 born = date.fromisoformat(details["date_of_birth"])
                 issued = date.fromisoformat(details["licence_issued"])
                 at = booking.pickupDate
                 age = at.year-born.year-((at.month, at.day)<(born.month, born.day))
                 months = (at.year-issued.year)*12+at.month-issued.month-(at.day<issued.day)
-                rule = policy.category_rules.get(car.category)
-                if not isinstance(rule, dict) or type(rule.get("guarantor_required")) is not bool:
-                    raise serializers.ValidationError("This vehicle category's guarantor policy is awaiting approval.")
-                if rule["guarantor_required"] and not all(details.get(k) for k in ["guarantor_name", "guarantor_phone"]):
+                rule = policy.category_rules.get(car.category, {})
+                if not all(details.get(k, "").strip() for k in ["guarantor_name", "guarantor_phone", "next_of_kin_name", "next_of_kin_phone"]):
                     raise serializers.ValidationError("Request the required guarantor details before approval.")
                 if age < rule.get("minimum_age", policy.minimum_age) or months < rule.get("minimum_licence_months", policy.minimum_licence_months):
                     raise serializers.ValidationError("The customer does not meet the approved driver rules.")
                 if details.get("cross_border"):
-                    raise serializers.ValidationError("Cross-border requests need an approved policy before proceeding.")
+                    raise serializers.ValidationError("Cross-border travel is not available.")
                 if not isinstance(checks, dict) or not all(checks.get(key) is True for key in ["details_match", "documents_genuine", "ntsa_checked", "correct_class"]):
                     raise serializers.ValidationError("Record all document and NTSA checks before approval.")
                 profile = CustomerProfile.objects.get(user=case.customer)
@@ -546,7 +567,9 @@ def access(request):
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
+@transaction.atomic
 def reuse_documents(request, pk):
+    get_user_model().objects.select_for_update().get(pk=request.user.pk, is_active=True)
     with transaction.atomic():
         booking = owned_booking(request.user, pk)
         booking = Booking.objects.select_for_update().get(pk=booking.pk)
@@ -555,9 +578,9 @@ def reuse_documents(request, pk):
         customer = get_object_or_404(CustomerProfile, user=request.user)
         previous = KycCase.objects.filter(customer=request.user, status="approved").exclude(booking=booking).order_by("-approved_at").first()
         details = decrypt(customer.details_encrypted)
-        if not previous or decrypt(previous.details_encrypted) != details or date.fromisoformat(details["licence_expiry"]) < booking.returnDate or (details.get("id_expiry") and date.fromisoformat(details["id_expiry"]) < booking.returnDate):
+        if not previous or not details or not details.get("licence_expiry") or decrypt(previous.details_encrypted) != details or date.fromisoformat(details["licence_expiry"]) < booking.returnDate or (details.get("id_expiry") and date.fromisoformat(details["id_expiry"]) < booking.returnDate):
             raise serializers.ValidationError("No current matching approved documents are on file. Upload fresh images.")
-        sources = list(PrivateDocument.objects.filter(pk__in=previous.document_ids, owner=request.user))
+        sources = list(PrivateDocument.objects.filter(pk__in=previous.document_ids, owner=request.user, erasure__isnull=True))
         if len(sources) != 4 or any(not (Path(settings.PRIVATE_DOCUMENT_ROOT)/source.storage_name).exists() for source in sources):
             raise serializers.ValidationError("Some saved documents are unavailable. Upload fresh images.")
         for source in sources:

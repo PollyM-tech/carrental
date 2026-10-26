@@ -1,4 +1,5 @@
 
+import FloatingContact from "@/components/layout/FloatingContact";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
@@ -16,6 +17,7 @@ export default function WebsiteLayout({
       </div>
 
       <Footer />
+      <FloatingContact />
     </div>
   );
 }

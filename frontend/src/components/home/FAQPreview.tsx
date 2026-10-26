@@ -16,13 +16,13 @@ const faqs = [
     id: "documents",
     question: "What documents do I need to rent a car?",
     answer:
-      "For self-drive rentals, you will generally need a valid driving licence and a national ID or passport. Additional requirements may apply depending on the selected vehicle and rental arrangement.",
+      "Drivers must be at least 22 and have held a driving licence for at least two years. Bring a valid licence and national ID or passport. Guarantor and next-of-kin contacts/details are required for all vehicles. KYC review targets 30 minutes and must be completed before handover. The rental contract is signed manually.",
   },
   {
     id: "chauffeur",
     question: "Do you offer chauffeur services?",
     answer:
-      "No. Movara Car Hire currently focuses on self-drive vehicle rentals and does not offer chauffeur services. You can contact our team to discuss the available self-drive options for your journey.",
+      "Chauffeur hire and additional drivers can be arranged where applicable. Contact our team to confirm availability and the arrangement before booking. Cross-border travel is currently unavailable.",
   },
   {
     id: "airport",
@@ -34,7 +34,7 @@ const faqs = [
     id: "payment",
     question: "How can I pay for my rental?",
     answer:
-      "Our team will provide the available payment methods and payment instructions when confirming your rental. Please verify the payment details before sending any money.",
+      "Payments will use an M-Pesa Buy Goods till. Where STK Push is available, you can use the prompt; if it fails, pay manually and submit your M-Pesa transaction code for verification. A submitted code does not confirm payment. Our team will confirm the till details before you pay.",
   },
   {
     id: "deposit",
@@ -64,7 +64,7 @@ const faqs = [
     id: "long-term",
     question: "Can I rent a car for several days or weeks?",
     answer:
-      "Yes. You can inquire about daily, weekly, and longer-term self-drive rentals. Our team will help you explore suitable vehicles and confirm availability and rates for your preferred period.",
+      "Yes. You can inquire about daily, weekly, and longer-term self-drive rentals. We use flat daily or agreed market rates confirmed before payment. Our team will confirm availability and the rate for your rental period.",
   },
 ];
 

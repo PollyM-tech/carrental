@@ -34,7 +34,7 @@ def serialize_attempt(attempt):
     observed = attempt.events.filter(kind="verified").order_by("-created_at").first()
     submission = getattr(attempt, "submission", None)
     return {
-        "provider": attempt.provider, "receiving_phone": attempt.receiving_phone,
+        "provider": attempt.provider, "receiving_phone": attempt.receiving_phone, "receiving_till": attempt.receiving_till,
         "transaction_code": submission.transaction_code if submission else None,
         "received_minor": receipt.amount_minor if receipt else observed.details.get("amount_minor") if observed else None,
         "id": str(attempt.pk), "reference": attempt.reference, "booking_id": str(attempt.booking_id),
@@ -46,7 +46,7 @@ def serialize_attempt(attempt):
         "quote_expires_at": attempt.quote_expires_at, "hold_expires_at": attempt.hold_expires_at,
         "checkout_url": state.authorization_url if state.status == "pending" and attempt.hold_expires_at > timezone.now() else "",
         "message": {
-            "quoted": "Review the amount and send money to the dedicated M-Pesa number." if attempt.provider == "manual_mpesa" else "Review the amount before continuing to Paystack.",
+            "quoted": "Review the amount and pay the displayed M-Pesa Buy Goods till." if attempt.provider == "manual_mpesa" else "Review the amount before continuing to Paystack.",
             "submitted": "Transaction code submitted. Finance will verify receipt before confirming your booking. Do not pay again.",
             "pending": "Payment is pending. Complete the checkout or check its status.",
             "initializing": "Your checkout is being prepared. Please check again shortly.",
@@ -63,8 +63,8 @@ def serialize_attempt(attempt):
 @permission_classes([IsAuthenticated])
 def capabilities(request):
     if settings.PAYMENT_PROVIDER == "manual_mpesa":
-        return Response({"provider": "manual_mpesa", "configured": bool(settings.MPESA_RECEIVING_PHONE), "test_mode": False,
-            "methods": [{"value": "manual_mpesa", "label": "M-Pesa Send Money"}], "fee_mode": "manual_mpesa"})
+        return Response({"provider": "manual_mpesa", "configured": bool(settings.MPESA_TILL_NUMBER), "test_mode": False,
+            "methods": [{"value": "manual_mpesa", "label": "M-Pesa Buy Goods"}], "fee_mode": "manual_mpesa"})
     provider_mode = settings.PAYSTACK_FEE_MODE == "provider" and settings.PAYSTACK_PASS_FEES_ENABLED
     return Response({"configured": paystack.configuration_ready(), "test_mode": settings.PAYSTACK_MODE == "test",
         "methods": [{"value": "mobile_money", "label": "M-Pesa"}] + ([{"value": "card", "label": "Card"}] if provider_mode else []),

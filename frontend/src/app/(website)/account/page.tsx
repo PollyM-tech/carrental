@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import PrivacyControls from "@/components/shared/PrivacyControls";
 import BookingPayments from "@/components/shared/BookingPayments";
 import { workflow, PublicCar } from "@/lib/workflow";
 import { Field, Message, buttonStyle, inputStyle } from "@/components/shared/FormFields";
@@ -17,8 +18,8 @@ export default function CustomerAccount() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
-  const [code, setCode] = useState("");
   const [verified, setVerified] = useState(false);
+  const [manual, setManual] = useState<{ reference: string; whatsapp_url: string; expires_at: string } | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [details, setDetails] = useState<Details>(emptyDetails);
@@ -83,19 +84,20 @@ export default function CustomerAccount() {
     </form> : <>
       <section className="space-y-4 rounded-2xl border bg-white p-6">
         <h2 className="text-xl font-bold">1. Verify your WhatsApp number</h2>
+        <p className="text-sm">Send a verification reference to Movara on WhatsApp (0716 741 039). Staff check the sender before approving your number.</p>
         {verified ? <p className="text-green-700">Phone verified</p> : <div className="grid items-end gap-3 sm:grid-cols-3">
           <Field label="WhatsApp number, e.g. +254…" value={phone} onChange={setPhone} />
-          <button disabled={busy} className={buttonStyle} onClick={() => void run(async () => { const response = await workflow<{ message: string; development_code?: string }>("workflow/phone/request/", { method: "POST", data: { phone } }); setMessage(response.message + (response.development_code ? ` Code: ${response.development_code}` : "")); })}>Send code</button>
-          <div><Field label="Verification code" value={code} onChange={setCode} /><button disabled={busy} className="mt-2 underline" onClick={() => void run(async () => { await workflow("workflow/phone/verify/", { method: "POST", data: { code } }); setVerified(true); setMessage("Phone verified."); })}>Verify code</button></div>
+          <button disabled={busy} className={buttonStyle} onClick={() => void run(async () => { const response = await workflow<{ message: string; development_code?: string; reference?: string; whatsapp_url?: string; expires_at?: string }>("workflow/phone/request/", { method: "POST", data: { phone } }); if (response.reference && response.whatsapp_url && response.expires_at) setManual({ reference: response.reference, whatsapp_url: response.whatsapp_url, expires_at: response.expires_at }); setMessage(response.message + (response.development_code ? ` Code: ${response.development_code}` : "")); })}>Get verification reference</button>
+          <button disabled={busy} className="underline" onClick={() => void run(async () => { await loadAccount(); setMessage("Phone verification status refreshed."); })}>Check approval status</button>
         </div>}
+        {!verified && manual && <div className="space-y-2 rounded-xl bg-green-50 p-4"><p>Reference: <strong className="font-mono">{manual.reference}</strong></p><p className="text-sm">Expires {new Date(manual.expires_at).toLocaleString("en-KE", { timeZone: "Africa/Nairobi" })}. Send from the number you entered above. Staff approval is required.</p><a className="inline-block font-bold text-green-800 underline" href={manual.whatsapp_url} target="_blank" rel="noopener noreferrer">Send reference on WhatsApp</a></div>}
       </section>
       <form className="space-y-4 rounded-2xl border bg-white p-6" onSubmit={event => { event.preventDefault(); void run(async () => { await workflow("workflow/profile/", { method: "POST", data: details }); setMessage("Customer details saved."); }); }}>
         <h2 className="text-xl font-bold">2. Customer and driving licence details</h2>
         <div className="grid gap-4 sm:grid-cols-2">{Object.entries(labels).map(([key, label]) => <Field key={key} label={label} type={["date_of_birth", "licence_issued", "licence_expiry"].includes(key) ? "date" : "text"} required value={String(details[key as keyof Details])} onChange={value => setDetails({ ...details, [key]: value })} />)}</div>
-        <label className="flex items-center gap-2"><input type="checkbox" checked={details.cross_border} onChange={e => setDetails({ ...details, cross_border: e.target.checked })} />I intend to travel outside Kenya</label>
         <Field type="date" label="ID or passport expiry (if applicable)" value={details.id_expiry} onChange={v => setDetails({ ...details, id_expiry: v })} />
-        <div className="grid gap-4 sm:grid-cols-2"><Field label="Guarantor name (if required)" value={details.guarantor_name} onChange={v => setDetails({ ...details, guarantor_name: v })} /><Field label="Guarantor phone (if required)" value={details.guarantor_phone} onChange={v => setDetails({ ...details, guarantor_phone: v })} /></div>
-        <p className="text-sm text-slate-600">Cross-border eligibility is awaiting the approved travel policy.</p>
+        <div className="grid gap-4 sm:grid-cols-2"><Field label="Guarantor name (all vehicles)" value={details.guarantor_name} onChange={v => setDetails({ ...details, guarantor_name: v })} /><Field label="Guarantor phone (all vehicles)" value={details.guarantor_phone} onChange={v => setDetails({ ...details, guarantor_phone: v })} /></div>
+        <p className="text-sm text-slate-600">Cross-border travel is currently unavailable.</p>
         <button disabled={busy} className={buttonStyle}>Save details</button>
       </form>
       <section className="space-y-4 rounded-2xl border bg-white p-6">
@@ -112,19 +114,22 @@ export default function CustomerAccount() {
       </section>
       {progress && <section className="space-y-4 rounded-2xl border bg-white p-6">
         <div className="flex justify-between gap-3"><h2 className="text-xl font-bold">Documents: {progress.booking.carName}</h2><button className="underline" onClick={() => void run(async () => { await openBooking(progress.booking._id); await loadAccount(); })}>Refresh status</button></div>
+        <div className="flex flex-wrap gap-3">{progress.documents.map(doc => <button key={doc.id} disabled={busy} className="text-sm underline" onClick={() => { const tab = window.open("about:blank", "_blank"); if (tab) tab.opener = null; void run(async () => { try { const result = await workflow<{ url: string }>(`workflow/documents/${doc.id}/link/`, { method: "POST", data: {} }); if (tab) tab.location.href = result.url; else setMessage("Allow a new tab to view your document."); } catch(e) { tab?.close(); throw e; } }); }}>View {doc.kind.replaceAll("_", " ")}</button>)}</div>
         <p>Status: <strong>{progress.booking.status.replaceAll("_", " ")}</strong></p>
         {progress.kyc?.reason && <Message message={progress.kyc.reason} />}
         <p className="text-sm text-slate-600">{policy.message} {progress.kyc?.due_at ? `Review due: ${new Date(progress.kyc.due_at).toLocaleString("en-KE", { timeZone: "Africa/Nairobi" })}` : ""}</p>
         {["draft", "kyc_needs_correction"].includes(progress.booking.status) && <>
           {progress.booking.status === "draft" && <button className="underline" disabled={busy} onClick={() => void run(async () => { const result = await workflow<{ message: string }>(`workflow/bookings/${progress.booking._id}/reuse-documents/`, { method: "POST", data: {} }); await openBooking(progress.booking._id); setMessage(result.message); })}>Use approved documents already on file</button>}
-          <p>Upload clear photos of the complete document. JPEG, PNG or WebP, up to 5MB. No online selfie is required.</p>
-          <div className="grid gap-4 sm:grid-cols-2">{["id_front", "id_back", "licence_front", "licence_back"].map(kind => <label key={kind} className="rounded-xl border p-4 font-semibold">{kind.replaceAll("_", " ")}{progress.documents.some(d => d.kind === kind) && <span className="ml-2 text-sm text-green-700">Uploaded</span>}<input disabled={busy} className="mt-3 block w-full text-sm" type="file" accept="image/jpeg,image/png,image/webp" onChange={e => { const file = e.target.files?.[0]; if (!file) return; void run(async () => { const data = new FormData(); data.append("kind", kind); data.append("image", file); await workflow(`workflow/bookings/${progress.booking._id}/documents/`, { method: "POST", data }); await openBooking(progress.booking._id); setMessage("Document uploaded securely."); }); }} /></label>)}</div>
           {policy.privacy_notice_version ? <label className="flex items-start gap-2"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /><span>I have read the <a href="/privacy" className="underline">privacy notice</a> ({policy.privacy_notice_version}) and consent to document verification.</span></label> : <p className="text-sm text-orange-800">Document submission will open after the privacy notice and retention settings are approved.</p>}
+          <p>Upload clear photos of the complete document. JPEG, PNG or WebP, up to 5MB. No online selfie is required.</p>
+          <div className="grid gap-4 sm:grid-cols-2">{["id_front", "id_back", "licence_front", "licence_back"].map(kind => <label key={kind} className="rounded-xl border p-4 font-semibold">{kind.replaceAll("_", " ")}{progress.documents.some(d => d.kind === kind) && <span className="ml-2 text-sm text-green-700">Uploaded</span>}<input disabled={busy || !consent} className="mt-3 block w-full text-sm" type="file" accept="image/jpeg,image/png,image/webp" onChange={e => { const file = e.target.files?.[0]; if (!file) return; void run(async () => { const data = new FormData(); data.append("kind", kind); data.append("image", file); data.append("consent", "true"); data.append("consent_version", policy.privacy_notice_version); await workflow(`workflow/bookings/${progress.booking._id}/documents/`, { method: "POST", data }); await openBooking(progress.booking._id); setMessage("Document uploaded securely."); }); }} /></label>)}</div>
+
           <button className={buttonStyle} disabled={busy || !verified || !consent} onClick={() => void run(async () => { await workflow(`workflow/bookings/${progress.booking._id}/submit/`, { method: "POST", data: { consent, consent_version: policy.privacy_notice_version } }); await openBooking(progress.booking._id); await loadAccount(); setMessage("Documents submitted for review."); })}>Submit documents for review</button>
         </>}
         {["awaiting_payment", "payment_pending_verification", "confirmed", "expired", "handover_in_progress", "active", "returned", "closed"].includes(progress.booking.status) && <BookingPayments key={progress.booking._id} bookingId={progress.booking._id} bookingStatus={progress.booking.status} onConfirmed={async () => { await openBooking(progress.booking._id); await loadAccount(); }} />}
         <details><summary className="cursor-pointer font-semibold">Booking history</summary>{progress.history.map((entry, i) => <p key={i} className="mt-2 text-sm">{entry.current.replaceAll("_", " ")} · {new Date(entry.created_at).toLocaleString("en-KE", { timeZone: "Africa/Nairobi" })}</p>)}</details>
       </section>}
+      <PrivacyControls />
       {notifications.length > 0 && <section className="rounded-2xl border p-6"><h2 className="text-xl font-bold">Updates</h2>{notifications.map(n => <p key={n.id} className="mt-3 text-sm">{n.message}</p>)}</section>}
     </>}
   </main>;

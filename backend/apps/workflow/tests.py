@@ -40,8 +40,9 @@ class WorkflowTests(APITestCase):
         self.car = Car.objects.create(name="Movara test SUV", category="SUV", pricePerDay=5000, seats=5, transmission="Automatic", fuel="Petrol", plateNumber="TEST001", mileage=12345)
         for kind in ["insurance", "inspection"]:
             VehicleDocument.objects.create(car=self.car, kind=kind, reference="test", expires_on=self.end+timedelta(days=30))
+        Policy.objects.all().delete()
         self.policy = Policy.objects.create(minimum_age=25, minimum_licence_months=24, staffed_start=time(9), staffed_end=time(17), staffed_weekdays=[0,1,2,3,4], privacy_notice_version="test-v1", privacy_notice_text="Test-only approved notice", retention_days=90, category_rules={"SUV": {"guarantor_required": False}})
-        self.details = {"full_name": "Test Customer", "id_number": "12345678", "date_of_birth": "1990-01-01", "licence_number": "DL123456", "licence_class": "B", "licence_issued": "2010-01-01", "licence_expiry": (self.end+timedelta(days=30)).isoformat(), "address": "Test address", "next_of_kin_name": "Test Kin", "next_of_kin_phone": "+254700000002", "destination": "Nairobi", "cross_border": False}
+        self.details = {"full_name": "Test Customer", "id_number": "12345678", "date_of_birth": "1990-01-01", "licence_number": "DL123456", "licence_class": "B", "licence_issued": "2010-01-01", "licence_expiry": (self.end+timedelta(days=30)).isoformat(), "address": "Test address", "next_of_kin_name": "Test Kin", "next_of_kin_phone": "+254700000002", "destination": "Nairobi", "cross_border": False, "guarantor_name": "Test Guarantor", "guarantor_phone": "+254700000003"}
         self.profile = CustomerProfile.objects.create(user=self.customer, details_encrypted=encrypt(self.details), id_hash=fingerprint(self.details["id_number"]), licence_hash=fingerprint(self.details["licence_number"]), phone_verified_at=timezone.now(), verified_phone_hash=fingerprint(self.customer.phone))
         self.client.force_authenticate(self.customer)
         self.base = "/api/v1/workflow/"
@@ -144,9 +145,11 @@ class WorkflowTests(APITestCase):
         self.assertEqual(self.approve(case).status_code, 400)
         booking.refresh_from_db(); self.assertEqual(booking.status, "kyc_in_review")
 
-    def test_unapproved_category_guarantor_policy_blocks_approval(self):
+    def test_all_categories_require_guarantor_even_without_category_rule(self):
         _, case = self.submitted(); self.start_review(case)
         self.policy.category_rules = {}; self.policy.save()
+        details = dict(self.details, guarantor_name="", guarantor_phone="")
+        case.details_encrypted = encrypt(details); case.save()
         self.assertEqual(self.approve(case).status_code, 400)
 
     def test_correction_preserves_due_time(self):
@@ -238,7 +241,7 @@ class WorkflowTests(APITestCase):
         booking = self.booking()
         raw = BytesIO(); Image.effect_noise((800,600), 70).convert("RGB").save(raw, "JPEG")
         with TemporaryDirectory() as root, override_settings(PRIVATE_DOCUMENT_ROOT=root):
-            response = self.client.post(self.base+f"bookings/{booking.pk}/documents/", {"kind": "id_front", "image": SimpleUploadedFile("id.jpg", raw.getvalue(), content_type="image/jpeg")}, format="multipart")
+            response = self.client.post(self.base+f"bookings/{booking.pk}/documents/", {"consent": "true", "consent_version": "test-v1", "kind": "id_front", "image": SimpleUploadedFile("id.jpg", raw.getvalue(), content_type="image/jpeg")}, format="multipart")
             self.assertEqual(response.status_code, 201, response.data)
             doc = PrivateDocument.objects.get(pk=response.data["id"])
             encrypted = (Path(root)/doc.storage_name).read_bytes()
@@ -255,7 +258,7 @@ class WorkflowTests(APITestCase):
 
     def test_blank_document_is_rejected(self):
         booking = self.booking(); raw = BytesIO(); Image.new("RGB", (800,600), "white").save(raw,"JPEG")
-        response = self.client.post(self.base+f"bookings/{booking.pk}/documents/", {"kind": "id_front", "image": SimpleUploadedFile("id.jpg", raw.getvalue(), content_type="image/jpeg")}, format="multipart")
+        response = self.client.post(self.base+f"bookings/{booking.pk}/documents/", {"consent": "true", "consent_version": "test-v1", "kind": "id_front", "image": SimpleUploadedFile("id.jpg", raw.getvalue(), content_type="image/jpeg")}, format="multipart")
         self.assertEqual(response.status_code, 400)
 
     def test_contacts_are_encrypted_in_database_and_email_lookup_still_works(self):

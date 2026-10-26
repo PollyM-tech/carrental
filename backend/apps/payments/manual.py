@@ -13,7 +13,7 @@ from .services import ACTIVE, payment_event, finance_alert, allocate_receipt, re
 
 def submit(attempt, customer, code):
     if settings.PAYMENT_PROVIDER != "manual_mpesa" or attempt.provider != "manual_mpesa":
-        raise ValidationError("Manual Send Money is not active for this payment.")
+        raise ValidationError("Manual M-Pesa is not active for this payment.")
     if not isinstance(code, str) or not re.fullmatch(r"[A-Z0-9]{10}", code.strip().upper()):
         raise ValidationError("Enter the 10-character M-Pesa transaction code from your receipt.")
     code = code.strip().upper()
@@ -36,9 +36,9 @@ def submit(attempt, customer, code):
         state.consent_at = timezone.now()
         state.save()
         if booking.status == "awaiting_payment" and booking.hold_expires_at and booking.hold_expires_at > timezone.now():
-            transition(booking, "payment_pending_verification", customer, "Customer submitted an M-Pesa Send Money transaction code; receipt not yet verified")
+            transition(booking, "payment_pending_verification", customer, "Customer submitted an M-Pesa transaction code; receipt not yet verified")
         payment_event(attempt, "manual_submitted", customer)
-        finance_alert(attempt, "Customer submitted a Send Money transaction code. Check the receiving account.")
+        finance_alert(attempt, "Customer submitted a M-Pesa transaction code. Check the receiving account.")
         return state
 
 
@@ -92,7 +92,7 @@ def decide(attempt, actor, data):
         except IntegrityError:
             raise ValidationError("This M-Pesa transaction is already recorded for another payment.") from None
         payment_event(attempt, "manual_receipt_verified", actor, reason=reason.strip(), amount_minor=receipt.amount_minor,
-                      receiving_phone=attempt.receiving_phone)
+                      receiving_phone=attempt.receiving_phone, receiving_till=attempt.receiving_till)
         if receipt.amount_minor != attempt.requested_minor:
             review(attempt, state, "The amount received differs from the booking total. Finance must arrange the balance or refund.", actor)
             return state

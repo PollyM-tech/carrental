@@ -29,6 +29,7 @@ class PaymentPolicy(models.Model):
 
 class PaymentAttempt(ImmutableRecord):
     provider = models.CharField(max_length=20, default="paystack")
+    receiving_till = models.CharField(max_length=10, blank=True)
     receiving_phone = models.CharField(max_length=20, blank=True)
     booking = models.ForeignKey("rentals.Booking", on_delete=models.PROTECT, related_name="payment_attempts")
     customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)

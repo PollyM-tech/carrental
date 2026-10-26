@@ -1,9 +1,13 @@
 from django.urls import path
-from . import views
+from . import views, manual_phone, privacy
 
 urlpatterns = [
+    path("privacy/requests/", privacy.requests),
+    path("privacy/export/", privacy.export),
+    path("privacy/review/", privacy.review),
     path("access/", views.access),
     path("profile/", views.profile),
+    path("phone/manual/", manual_phone.queue),
     path("phone/request/", views.phone_request),
     path("phone/verify/", views.phone_verify),
     path("public/cars/", views.public_cars),
