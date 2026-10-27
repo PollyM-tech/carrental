@@ -16,16 +16,21 @@ type AdminHeaderProps = {
   title?: string;
   subtitle?: string;
   onMenuClick?: () => void;
+  onSignOut?: () => void;
+  signingOut?: boolean;
 };
 
 export default function AdminHeader({
   title = "Dashboard",
   subtitle,
   onMenuClick,
+  onSignOut,
+  signingOut = false,
 }: AdminHeaderProps) {
   const router = useRouter();
 
   function handleLogout() {
+    if (onSignOut) { onSignOut(); return; }
     localStorage.removeItem("movara_admin_token");
 
     router.replace("/admin-login");
@@ -123,6 +128,7 @@ export default function AdminHeader({
           <button
             type="button"
             onClick={handleLogout}
+            disabled={signingOut}
             title="Sign out"
             aria-label="Sign out"
             className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"

@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
+from apps.workflow.phone_numbers import normalise_phone
 
 
 User = get_user_model()
@@ -24,6 +25,14 @@ class RegisterSerializer(serializers.ModelSerializer):
             "phone",
         )
         read_only_fields = ("id",)
+
+    def validate_phone(self, value):
+        if not value:
+            return value
+        try:
+            return normalise_phone(value)
+        except ValueError as error:
+            raise serializers.ValidationError(str(error)) from None
 
     def validate_password(self, value):
         validate_password(value)

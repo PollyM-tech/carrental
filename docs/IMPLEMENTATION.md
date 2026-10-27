@@ -35,3 +35,32 @@ The first staff login requires adding a setup key to an authenticator app. Exist
 The backend suite runs against PostgreSQL, including direct database overlap and audit-tampering tests. SQLite remains available for development but cannot enforce the PostgreSQL-specific guards. Frontend type checking, lint and the production build are part of validation.
 
 The main README contains environment variables, startup commands and role/MFA recovery instructions.
+
+## 27 October 2026: single-admin and in-person workflow
+
+Source now includes the unlisted `/movara-access` login for the existing owner,
+public customer login, in-person original-document/phone/eligibility checks,
+kin/guarantor contact collection, booking approval with overlap/compliance checks,
+and customer return/conduct records with flag/second-chance decisions. Staff and
+audit/reporting screens are removed. Online identity uploads stay closed by client
+choice. Payment collection/release remains a separate pending module.
+
+Local auth, rental-rule and actual-handler integration checks pass; the integration
+adapter is in-memory and does not claim to emulate Convex transaction isolation.
+The production build and type checks pass. Lint has the two pre-existing warnings.
+
+Live verification is incomplete: the development deployment initially accepted
+new tables/functions, then Convex HTTP/CLI calls began timing out. The final source
+adds phone-check enforcement and review revision checks after that initial push.
+**A successful final sync is required before using the new workflow.** From
+`frontend`, run `npx convex dev --once` when connectivity is restored, and perform
+real owner/customer sign-in plus verification/approval/return smoke checks.
+
+Temporary internal `workflowSmoke` helpers were removed from source and local
+generated types. Their removal from the deployment and cleanup of any synthetic
+login-test accounts could not yet be verified due to the connection failure.
+Synthetic accounts use only `movara-smoke-<hex>@example.invalid`; never delete a
+real customer's records during cleanup. No real identity files or payments were
+used. The temporary helper backup and cleanup retry scripts are under `/tmp` in
+this working session; clean synthetic records before the final sync removes the
+old deployed helpers. Never share or reset the real owner's password for tests.

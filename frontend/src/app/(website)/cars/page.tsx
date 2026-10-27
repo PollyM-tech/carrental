@@ -241,7 +241,7 @@ export default function CarsPage() {
 
                       {car.status === "available" ? (
                         <Link
-                          href={`/contact?car=${encodeURIComponent(car.name)}`}
+                          href={`/workspace?car=${encodeURIComponent(car.id)}`}
                           className="inline-flex min-h-10 items-center justify-center rounded-lg bg-[#FF7A00] px-3 py-2 text-[13px] font-medium text-white hover:bg-[#E86D00]"
                         >
                           Book Now

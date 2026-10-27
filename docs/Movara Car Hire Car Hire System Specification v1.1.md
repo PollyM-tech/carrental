@@ -1,5 +1,29 @@
 # Movara Car Hire: Car Hire System Specification
 
+## Payment sequence clarification — October 27, 2026
+
+This clarification supersedes any earlier instruction to collect payment after online KYC alone. Collect neither rental payment nor a security deposit until **all stages are approved**, including physical identity/document checks and the manually signed contract at handover. Then collect and verify the required payment before releasing the vehicle. Failed clearance means no collection and no vehicle release. If funds were paid prematurely, handle the exceptional refund under the previously stated contract terms (full amount paid less transaction costs); do not collect funds in anticipation of failure. Deposit amounts remain pending.
+
+The current Convex flow collects no payments. Its future payment gate must require final handover clearance; legacy Django payment instructions below do not implement this updated sequence and must not be used to collect early payment.
+
+
+## Confirmed client update — October 27, 2026
+
+This update supersedes conflicting draft requirements below.
+
+- Security deposits are collected at handover, separately from online rental payments. Amounts per vehicle category await the client's research. Deposit return timing, deductions and settlement procedures have not been supplied; do not treat an unknown amount as zero.
+- Failed physical identity/document checks at handover: refund the full amount paid less transaction costs. These terms are in the manually signed contract. The fee calculation and processing timeframe remain to be supplied; do not invent a fixed fee or automate a refund yet.
+- No-show: release the vehicle immediately after the agreed pickup time is missed (zero-minute grace period). The client explicitly rejected the earlier two-hour option. Applicable charges follow the contract; request cancellation in the current app does not calculate fees or issue a refund.
+- Cancellation deadlines/fees and insurance coverage, excess and damage/theft liability are governed by the manually signed contract. Obtain the contract copy before implementing calculations. No online signatures.
+- Every vehicle requires a guarantor and next-of-kin contacts/details. Drivers must be at least 22 and have held a licence for at least two years. Additional drivers and chauffeur hire are available where applicable; cross-border travel is excluded.
+- KYC review targets 30 minutes and must be completed before vehicle handover. Opening hours have not been supplied.
+- Prices use flat daily or agreed market rates; no weekend, seasonal or long-term discount rules were supplied.
+- Vehicle owners provide GPS trackers. Tamper alerts are required; device, supplier, subscription and alert configuration/testing details remain to be collected. Owner supply does not mean live integration or alerts have been verified.
+- Document retention is seven days after a resolved rental, subject to unresolved-case holds. An approved privacy notice is still required before collecting documents.
+- Contact: movaracarhire@gmail.com; calls/SMS/WhatsApp: 0716 741 039. Ordinary WhatsApp is used; a paid authentication provider is not configured.
+
+Implementation status: the current Convex application supports accounts, vehicle management and booking requests. These policy decisions are shown to customers and staff. Handover, automatic no-show release, deposits/refunds, KYC/privacy workflows and tracker integration still require implementation in Convex. Existing Django modules are not evidence that these flows are active in the Convex app.
+
 ## Confirmed client update — October 26, 2026
 
 This update supersedes conflicting requirements and open questions below.
@@ -156,7 +180,7 @@ The customer enters the bank reference. Unless the bank provides a notification 
 
 ### 7.5 Deposits and refunds
 
-Whether a security deposit is taken online with the payment, or held differently at handover, is an open decision (see section 16). Whatever is chosen, the amount, method and refund conditions must appear in the contract and be recorded against the booking.
+Security deposits are collected at handover. Amounts per vehicle category and deposit refund conditions are pending and must appear in the contract and be recorded against the booking before collection.
 
 ## 8. Physical handover
 
@@ -182,7 +206,7 @@ The staff member must not release the vehicle. They record the reason, and the c
 
 ### 8.3 No-shows
 
-If the customer does not arrive within the agreed grace period, the booking is marked No-show and the vehicle is released back into availability. Fees follow the cancellation policy.
+If the customer misses the agreed pickup time, mark the booking No-show and release the vehicle immediately, with no grace period. Fees follow the cancellation terms in the manually signed contract. This requires the confirmed-rental/handover workflow; request submission alone does not create a reservation.
 
 ## 9. Image capture and verification
 
@@ -273,20 +297,17 @@ Important rules:
   - limit staff access to what each role needs.
 - A lawyer should confirm these obligations for the exact way Movara stores and uses the data.
 
-## 16. Open decisions
+## 16. Remaining details
 
-These need an answer before the build can be finalised.
+Confirmed decisions are recorded in the October 27 update above. Still needed:
 
-- **Deposit:** amount per vehicle category, whether it is paid online or at handover, and how it is refunded.
-- **Handover failure refund:** if a customer fails the physical check (for example, an ID mismatch), what is refunded and what is kept for costs. A full refund minus transaction charges is a common starting point.
-- **No-show window:** how long the vehicle is held after the pickup time.
-- **Cancellation policy:** deadlines and fees.
-- **Insurance:** what is covered, the excess, and liability for damage and theft.
-- **Guarantor:** which vehicle categories require one.
-- **Staffed hours:** the hours in which the 30-minute KYC target applies.
-- **Driver rules:** minimum age, minimum licence age, additional drivers, chauffeur hire and cross-border travel.
-- **Pricing:** flat daily rate or rules for weekend, season and long-term discounts.
-- **Tracker supplier:** model, subscription and tamper alerts.
+- Deposit amounts per vehicle category after client research, plus deposit return timing and deductions.
+- The contract copy containing cancellation deadlines/fees, insurance cover, excess, damage/theft liability and agreed refund terms.
+- The transaction-cost calculation and refund processing timeframe; no arbitrary deduction is authorised.
+- Owner-supplied tracker device/supplier, subscriptions and verified tamper alert configuration for each vehicle.
+- Staff opening hours, if they are to refine scheduling of the pre-handover KYC target.
+- Merchant till details and any credentials required for future STK integration.
+- Approved privacy notice and separate retention decisions for financial/audit records.
 
 ## 17. Delivery phases
 
@@ -295,3 +316,26 @@ These need an answer before the build can be finalised.
 **Phase 2: control and growth.** GPS tracker integration and tamper alerts, pricing rules and discounts, damage claims, overdue escalation workflow, reconciliation reports, reporting dashboards.
 
 **Phase 3: scale.** Optional government database checks through a provider as a staff aid, optional automatic face matching as a staff aid, corporate accounts, loyalty, and owner payouts if third-party vehicles are added.
+
+## Scope revision — October 27, 2026
+
+This revision supersedes earlier role, document-upload and return-module plans.
+
+- Use one existing admin account: movaracarhire@gmail.com. Admin sign-in is an
+  unlisted page requiring that account's password and server-side owner access.
+  Customer login/registration remains public. Staff-management and searchable
+  audit/reporting dashboards are deferred; internal operational logging remains.
+- The client selected in-person identification for now. Customers bring original
+  ID/passport and driving licence. Do not collect identity-document photos until
+  an approved privacy notice and private upload/retention flow are ready.
+- Record customer, guarantor and next-of-kin contacts. The owner checks phone,
+  originals, driver age/licence tenure and contacts, then approves or requests
+  corrections. Booking approval reserves dates after conflict/compliance checks.
+- Return procedures, fuel/mileage, damages and deposit settlement follow the
+  manually signed contract. Keep a customer outcome record indicating condition,
+  compliance with rules and whether the customer is flagged or given a second
+  chance. Preserve previous outcomes. Non-return leaves vehicle availability
+  blocked until an actual return/recovery is recorded.
+- Neither identification approval nor booking approval records payment or
+  authorizes release. Complete all handover approvals and manual contract signing,
+  then collect and verify payment before releasing a vehicle.

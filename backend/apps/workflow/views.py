@@ -27,6 +27,7 @@ from .models import AuditEvent, BookingHistory, CustomerProfile, PhoneChallenge,
 from .permissions import FleetAccess, KycAccess, OwnerAccess, StaffAccess, has_role, ROLES
 from .security import cipher, encrypt, decrypt, fingerprint
 from .services import audit, transition, vehicle_available, date_range, staffed_due, expire_holds
+from .phone_numbers import normalise_phone
 from .whatsapp import send_code, DeliveryUnavailable
 
 
@@ -92,13 +93,10 @@ def profile(request):
 @permission_classes([IsAuthenticated])
 @throttle_classes([OtpThrottle])
 def phone_request(request):
-    phone = str(request.data.get("phone", "")).strip().replace(" ", "")
-    if phone.startswith("0"):
-        phone = "+254" + phone[1:]
-    if phone.startswith("254"):
-        phone = "+" + phone
-    if not re.fullmatch(r"\+[1-9]\d{8,14}", phone):
-        raise serializers.ValidationError("Enter a phone number with country code.")
+    try:
+        phone = normalise_phone(request.data.get("phone", ""))
+    except ValueError as error:
+        raise serializers.ValidationError(str(error)) from None
     if settings.OTP_BACKEND == "manual_whatsapp":
         from .manual_phone import start
         return Response(start(request.user, phone))

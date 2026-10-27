@@ -1,0 +1,90 @@
+import { v } from "convex/values";
+import { mutation, query } from "./_generated/server";
+import { requireRole, requireUser } from "./lib/permissions";
+import { normalisePhone } from "./lib/identity";
+import { availableFor, rentalEstimate } from "./lib/vehicle_rules";
+import { reservedConflict, canEditVerification } from "./lib/rental_checks";
+import { bookingDates, bookingText, requireBookingOwner } from "./lib/booking_input";
+
+export const mine = query({
+  args: {},
+  handler: async ctx => {
+    const user = await requireUser(ctx);
+    return await ctx.db.query("movaraBookingRequests").withIndex("by_customer", q => q.eq("customerId", user._id)).order("desc").take(100);
+  },
+});
+export const create = mutation({
+  args: { requestKey: v.string(), vehicleId: v.id("movaraVehicles"), pickupDate: v.string(), returnDate: v.string(), pickupLocation: v.string(), phone: v.string() },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    if (!/^[a-zA-Z0-9-]{16,64}$/.test(args.requestKey)) throw new Error("Refresh this booking form and retry.");
+    const rentalDays = bookingDates(args.pickupDate, args.returnDate);
+    const pickupLocation = bookingText(args.pickupLocation, "Pickup location", 200);
+    const phone = normalisePhone(args.phone);
+    const existing = await ctx.db.query("movaraBookingRequests").withIndex("by_customer_key", q => q.eq("customerId", user._id).eq("requestKey", args.requestKey)).unique();
+    if (existing) {
+      if (existing.vehicleId !== args.vehicleId || existing.pickupDate !== args.pickupDate || existing.returnDate !== args.returnDate || existing.pickupLocation !== pickupLocation || existing.phone !== phone) throw new Error("This request was already received with different details. Refresh your requests before submitting another one.");
+      return existing._id;
+    }
+    const vehicle = await ctx.db.get(args.vehicleId);
+    if (!vehicle) throw new Error("Select a current vehicle.");
+    const blocks = await ctx.db.query("movaraVehicleBlocks").withIndex("by_vehicle", q => q.eq("vehicleId", vehicle._id)).collect();
+    const rentals = await ctx.db.query("movaraBookingRequests").withIndex("by_vehicle", q => q.eq("vehicleId", vehicle._id)).collect();
+    if (reservedConflict(rentals, args.pickupDate, args.returnDate)) throw new Error("This vehicle is reserved for those dates or has not yet been returned.");
+    if (!availableFor(vehicle, args.pickupDate, args.returnDate, blocks)) throw new Error("This vehicle is unavailable or its compliance does not cover your dates. Choose another vehicle or dates.");
+    const vehiclePreference = vehicle.name;
+    const dailyRateKes = vehicle.pricePerDay;
+    const estimatedRentalKes = rentalEstimate(dailyRateKes, rentalDays);
+    if (phone !== user.phone) await ctx.db.patch(user._id, { phone, phoneVerificationTime: undefined });
+    const id = await ctx.db.insert("movaraBookingRequests", { customerId: user._id, requestKey: args.requestKey, vehiclePreference, vehicleId: vehicle._id, dailyRateKes, estimatedRentalKes, pickupDate: args.pickupDate, returnDate: args.returnDate, rentalDays, pickupLocation, phone, status: "requested", updatedAt: Date.now() });
+    await ctx.db.insert("accessEvents", { subjectId: user._id, actorId: user._id, action: "booking.requested", occurredAt: Date.now() });
+    return id;
+  },
+});
+export const cancel = mutation({
+  args: { id: v.id("movaraBookingRequests") },
+  handler: async (ctx, { id }) => {
+    const user = await requireUser(ctx);
+    const booking = await ctx.db.get(id);
+    requireBookingOwner(booking, user._id);
+    if (booking!.status === "cancelled") return;
+    if (!canEditVerification(booking!.status)) throw new Error("Contact Movara to change an approved rental.");
+    await ctx.db.patch(id, { status: "cancelled", updatedAt: Date.now() });
+    await ctx.db.insert("accessEvents", { subjectId: user._id, actorId: user._id, action: "booking.request_cancelled", occurredAt: Date.now() });
+  },
+});
+export const staffList = query({
+  args: {},
+  handler: async ctx => {
+    await requireRole(ctx, "front_desk", "finance", "kyc_reviewer");
+    const rows = await ctx.db.query("movaraBookingRequests").order("desc").take(100);
+    return await Promise.all(rows.map(async row => ({ ...row, email: (await ctx.db.get(row.customerId))?.email ?? "" })));
+  },
+});
+export const review = mutation({
+  args: { id: v.id("movaraBookingRequests"), status: v.union(v.literal("in_review"), v.literal("cancelled")) },
+  handler: async (ctx, { id, status }) => {
+    const { user } = await requireRole(ctx, "front_desk");
+    const booking = await ctx.db.get(id);
+    if (!booking) throw new Error("Booking request not found.");
+    if (["cancelled", "returned", "overdue"].includes(booking.status)) throw new Error("This request is cancelled. Ask the customer to submit a new request.");
+    await ctx.db.patch(id, { status, updatedAt: Date.now() });
+    await ctx.db.insert("accessEvents", { subjectId: booking.customerId, actorId: user._id, action: "booking.request_" + status, occurredAt: Date.now() });
+  },
+});
+
+export const approve = mutation({ args: { id: v.id("movaraBookingRequests") }, handler: async (ctx, { id }) => {
+  const { user } = await requireRole(ctx); const booking = await ctx.db.get(id);
+  if (!booking || !booking.vehicleId || !canEditVerification(booking.status)) throw new Error("This request cannot be approved.");
+  const verification = await ctx.db.query("movaraVerification").withIndex("by_booking", q => q.eq("bookingId", id)).unique();
+  if (verification?.status !== "approved") throw new Error("Complete and approve the in-person identity, licence and contact checks first.");
+  const standing = await ctx.db.query("movaraCustomerStanding").withIndex("by_customer", q => q.eq("customerId", booking.customerId)).unique();
+  if (standing?.status === "flagged") throw new Error("This customer is flagged. Record an explicit second-chance decision before approving another rental.");
+  const vehicle = await ctx.db.get(booking.vehicleId); if (!vehicle) throw new Error("Vehicle not found.");
+  const blocks = await ctx.db.query("movaraVehicleBlocks").withIndex("by_vehicle", q => q.eq("vehicleId", vehicle._id)).collect();
+  const rentals = await ctx.db.query("movaraBookingRequests").withIndex("by_vehicle", q => q.eq("vehicleId", vehicle._id)).collect();
+  bookingDates(booking.pickupDate, booking.returnDate);
+  if (!availableFor(vehicle, booking.pickupDate, booking.returnDate, blocks) || reservedConflict(rentals, booking.pickupDate, booking.returnDate, id)) throw new Error("This car is no longer available or compliant for these dates.");
+  await ctx.db.patch(id, { status: "approved", updatedAt: Date.now() });
+  await ctx.db.insert("accessEvents", { subjectId: booking.customerId, actorId: user._id, action: `booking.approved:${id}`, occurredAt: Date.now() });
+}});

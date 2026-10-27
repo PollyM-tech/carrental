@@ -12,7 +12,8 @@ import {
 } from "lucide-react";
 
 import { formatPrice } from "@/data/cars";
-import { workflow, PublicCar } from "@/lib/workflow";
+import { fetchQuery } from "convex/nextjs";
+import { api } from "../../../../../convex/_generated/api";
 import { catalogueCar } from "@/lib/catalogue";
 
 export const dynamic = "force-dynamic";
@@ -29,7 +30,8 @@ export default async function CarDetailsPage({
   const { carId } = await params;
   let car;
   try {
-    car = catalogueCar(await workflow<PublicCar>(`workflow/public/cars/${carId}/`, { public: true }));
+    const record = (await fetchQuery(api.vehicles.publicList, {})).find(vehicle => vehicle._id === carId);
+    car = record ? catalogueCar(record) : null;
   } catch { car = null; }
 
   if (!car) {
@@ -89,7 +91,7 @@ export default async function CarDetailsPage({
               MOVARA CAR HIRE
             </span>
 
-            <Link href={`/account?car=${car.id}`} className="mb-4 inline-flex rounded-xl bg-orange-600 px-5 py-3 font-bold text-white">Choose dates and book</Link>
+            <Link href={`/workspace?car=${car.id}`} className="mb-4 inline-flex rounded-xl bg-orange-600 px-5 py-3 font-bold text-white">Choose dates and book</Link>
             <h1 className="mt-2 text-[26px] font-bold leading-tight text-[#0B1C4D] sm:text-[32px]">
               {car.name}
             </h1>
@@ -162,7 +164,7 @@ export default async function CarDetailsPage({
             <div className="mt-6">
               {canInquire ? (
                 <Link
-                  href={`/contact?car=${encodeURIComponent(car.name)}`}
+                  href={`/workspace?car=${car.id}`}
                   className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#FF7A00] px-5 py-2.5 text-[13px] font-medium text-white hover:bg-[#E86D00]"
                 >
                   <CalendarCheck size={16} />

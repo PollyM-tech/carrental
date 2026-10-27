@@ -1,5 +1,18 @@
 # Manual M-Pesa payments
 
+## Payment sequence clarification — October 27, 2026
+
+This clarification supersedes any earlier instruction to collect payment after online KYC alone. Collect neither rental payment nor a security deposit until **all stages are approved**, including physical identity/document checks and the manually signed contract at handover. Then collect and verify the required payment before releasing the vehicle. Failed clearance means no collection and no vehicle release. If funds were paid prematurely, handle the exceptional refund under the previously stated contract terms (full amount paid less transaction costs); do not collect funds in anticipation of failure. Deposit amounts remain pending.
+
+The current Convex flow collects no payments. Its future payment gate must require final handover clearance; legacy Django payment instructions below do not implement this updated sequence and must not be used to collect early payment.
+
+
+## Client decision — October 27, 2026
+
+Security deposits are paid at handover, not online. Category amounts await client research; deposit refund/settlement details are still pending. Failed physical identity/document checks qualify for a refund of the full amount paid less transaction costs, under the manually signed contract. Do not invent fees, a refund deadline or cancellation penalties. No-show release is immediate at the missed pickup time; cancellation charges and insurance liabilities follow the contract. Obtain its actual terms before automating calculations.
+
+The instructions below describe the legacy Django implementation. Payments, deposit settlement, handover/no-show release and refund processing are not active in the current Convex booking-request flow. These decisions do not initiate a charge or refund.
+
 Updated October 26, 2026: new payments use a Buy Goods till. The till number is awaiting the client; do not reuse the contact phone as a till. Manual transaction-code submission requires finance verification before confirmation. STK Push is requested but remains pending merchant credentials and integration; no STK prompt is currently sent. The app adds no surcharge.
 
 ## Setup
@@ -13,7 +26,7 @@ MPESA_TILL_NUMBER=<client-supplied-till>
 
 Restart Django after changing configuration. The till number is snapshotted on each payment quote so changes do not silently redirect an existing quote. No API consumer keys, passkey, payment webhook or payment worker are required for manual collection. Existing Paystack code/records remain, but hosted checkout and webhook ingestion are disabled while the active provider is manual M-Pesa.
 
-The owner must first approve the security-deposit policy under `/dashboard/payment-settings`: online, at handover, or explicitly none, with category amounts where required and an approval reason. No unapproved deposit decision is assumed. The other KYC policies and verified phone checks still apply.
+When migrating payment settings, use the approved deposit timing `handover`. Category amounts still need approval; do not substitute zero or enable online deposit collection. The legacy `/dashboard/payment-settings` is not yet migrated to Convex. The other KYC policies and verified phone checks still apply.
 
 ## Customer flow
 

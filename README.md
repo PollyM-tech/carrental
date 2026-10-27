@@ -1,5 +1,7 @@
 # Movara Car Hire
 
+Convex migration has started: Convex Auth is deployed to the linked development project, with new `/sign-in` and `/workspace` routes. Customer booking requests and the admin request queue now use Convex; catalogue, KYC, payments and remaining operational tools still need migration. See [Convex migration setup](frontend/convex/README.md) for private owner onboarding and remaining work.
+
 Movara uses Next.js and TypeScript for the website and dashboards, Django REST Framework for the backend, PostgreSQL for records, and Cloudinary for public vehicle photos.
 
 ## Start locally
@@ -134,3 +136,84 @@ npm run build
 ```
 
 The specification is in `docs/Movara Car Hire Car Hire System Specification v1.1.md`.
+
+## Convex vehicle management
+
+The Convex admin pages `/dashboard/cars` and `/dashboard/fleet` manage vehicles,
+whole-KES daily rates, photos, publication, mileage, insurance/inspection expiry
+and dated maintenance blocks. Owner/admin/fleet-manager permissions are enforced
+in backend functions. Archive preserves existing booking requests; restoration
+creates a hidden draft. Registration numbers and maintenance reasons are staff-only.
+Photos are public catalogue assets; identity documents must never use this upload.
+Unused photo uploads are deleted after 24 hours; replaced photos are deleted after saving.
+
+The public catalogue and vehicle detail pages read Convex. Publishing requires
+current compliance dates. Customer requests select a published vehicle, check
+compliance coverage and maintenance overlap for the requested dates, and snapshot
+the daily rate and rental estimate. Return/block-end dates are exclusive. Requests
+do not create reservations, request payment, or replace KYC/contract checks.
+No sample fleet is published automatically: enter the client's actual vehicles,
+rates and compliance dates before publishing. Payments, document review, staff
+management and privacy workflows still need migration from Django to Convex.
+
+Run `npm run test:vehicles` alongside `npm run test:auth` in `frontend`.
+
+
+## Client policy update — 27 October 2026
+
+Deposits are collected at handover; category amounts and deposit return details
+remain pending. Failed physical checks refund the full amount paid less transaction
+costs, under the manually signed contract. No-show release is immediate after a
+missed agreed pickup time (no two-hour grace period). Cancellation and insurance
+terms remain in the contract; their actual text is needed before calculations.
+Owners provide GPS trackers; supplier/subscription details and tested tamper alerts
+remain pending. See the latest update in the system specification for all decisions.
+Shared policy copy is in `frontend/src/config/rental-policy.ts` and is displayed
+in the customer workspace, FAQs and admin overview. These are recorded decisions;
+Convex handover, no-show, payment/refund and tracker automation remain to be built.
+
+Payment sequence clarification (27 October 2026): collect rental payment and any
+security deposit only after all checks, physical clearance and manual contract
+signing are complete. Verify payment before vehicle release. Earlier Django
+payment-after-online-KYC instructions are superseded and require migration.
+
+Admin vehicle entry: open **Dashboard → Add cars, photos & rates → Add car & photo**.
+The numbered form includes vehicle details, compliance, a cover photo and publication.
+Choose a JPEG/PNG/WebP from the device gallery/Documents or drag and drop it (5MB
+maximum input); gallery frames use 4:3. Switch between Photo gallery and Table
+for reviewing records. This picker uploads photos, not PDF/Excel vehicle imports.
+
+## Single-admin verification and return records — 27 October 2026
+
+Only `movaracarhire@gmail.com` with its existing active owner membership can
+perform Convex admin actions. The unlisted, noindex admin sign-in is
+`/movara-access` (`/admin-login` redirects there); public `/sign-in` handles
+customers and does not link to admin access. A link alone grants no permission.
+Staff management and audit/reporting screens are removed from the dashboard.
+Internal operational event records remain for integrity and investigation.
+
+Identification currently happens **in person**, as the client confirmed. No
+identity-document upload is exposed and no copies are collected by this flow.
+Customers open a booking's Identification & contact details section and provide
+their full name, next of kin and guarantor contacts with permission to share them.
+The owner checks original ID/passport and licence, age 22+, licence tenure 2 years,
+customer phone and contacts. Corrections invalidate previous checks; stale review
+submissions are rejected. An approved privacy notice and private document handling
+must be in place before a future online-upload option is opened.
+
+Under `/dashboard/bookings`, open Verification, approval & return record. Approved
+in-person checks and a non-flagged customer allow booking approval, which reserves
+the car after a transactional availability/compliance check. Adjacent rentals are
+allowed; overlapping approvals are rejected. Customers cannot silently cancel or
+change an approved rental. Payment is still not collected by this module: manual
+contract signing and verified payment remain prerequisites to actual vehicle release.
+
+For rentals actually handed over under a manually managed contract, record good
+condition, damage/issues, or non-return; whether rules were followed; and clear,
+flagged or second-chance disposition with findings. Contract terms govern charges,
+fuel/mileage and deposit settlement; this is a conduct record, not a financial
+settlement. Non-return keeps the car unavailable for future dates until recovery
+is recorded. A flag blocks approval; an explicit second chance allows a fresh
+review without deleting history. A later good return never silently clears a flag.
+
+Run `npm run test:rentals` with the frontend auth and vehicle checks.

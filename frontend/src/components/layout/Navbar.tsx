@@ -128,7 +128,7 @@ export default function Navbar() {
           </div>
         </Link>
 
-        <Link href="/account" className="ml-auto rounded-lg border border-orange-200 px-3 py-2 text-xs font-bold text-orange-700">My bookings</Link>
+        <Link href="/workspace" className="ml-auto rounded-lg border border-orange-200 px-3 py-2 text-xs font-bold text-orange-700">My bookings</Link>
         {/* Desktop navigation */}
         <div className="hidden items-center gap-4 xl:flex 2xl:gap-7">
           {navLinks.map((link) => (

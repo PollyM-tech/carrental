@@ -18,17 +18,15 @@ import {
 type AdminSidebarProps = {
   isOpen?: boolean;
   onClose?: () => void;
+  providedAccess?: { owner: boolean; roles: readonly string[] };
+  availablePaths?: readonly string[];
 };
 
 const navLinks = [
-  { label: "Phone verification", href: "/dashboard/phone-verification", icon: CalendarDays },
   { label: "Data requests", href: "/dashboard/data-requests", icon: Settings },
   { label: "Payments", href: "/dashboard/payments", icon: CalendarDays },
   { label: "Payment policy", href: "/dashboard/payment-settings", icon: Settings },
-  { label: "Document review", href: "/dashboard/kyc", icon: CalendarDays },
   { label: "Fleet compliance", href: "/dashboard/fleet", icon: CarFront },
-  { label: "Staff access", href: "/dashboard/team", icon: Settings },
-  { label: "Audit history", href: "/dashboard/audit", icon: CalendarDays },
   { label: "Approved policies", href: "/dashboard/policies", icon: Settings },
   {
     label: "Overview",
@@ -55,10 +53,13 @@ const navLinks = [
 export default function AdminSidebar({
   isOpen = false,
   onClose,
+  providedAccess,
+  availablePaths,
 }: AdminSidebarProps) {
   const pathname = usePathname();
-  const [access, setAccess] = useState<{ owner: boolean; roles: string[] } | null>(null);
-  useEffect(() => { void workflow<{ owner: boolean; roles: string[] }>("workflow/access/", { staff: true }).then(setAccess).catch(() => {}); }, []);
+  const [legacyAccess, setAccess] = useState<{ owner: boolean; roles: string[] } | null>(null);
+  useEffect(() => { if (providedAccess) return; void workflow<{ owner: boolean; roles: string[] }>("workflow/access/", { staff: true }).then(setAccess).catch(() => {}); }, [providedAccess]);
+  const access = providedAccess ?? legacyAccess;
   function visible(href: string) {
     if (access?.owner) return true;
     if (["/dashboard/team", "/dashboard/audit", "/dashboard/policies", "/dashboard/settings", "/dashboard/payment-settings", "/dashboard/data-requests"].includes(href)) return false;
@@ -151,6 +152,7 @@ export default function AdminSidebar({
                 (link.href !== "/dashboard" &&
                   pathname.startsWith(`${link.href}/`));
 
+              if (availablePaths && !availablePaths.includes(link.href)) return <div key={link.href} aria-disabled="true" title="This tool is being prepared" className="flex min-h-11 items-center gap-3 rounded-lg px-3.5 py-2.5 text-[13px] text-slate-500"><Icon size={19} /><span className="truncate">{link.label}</span><span className="ml-auto text-[10px]">Soon</span></div>;
               return (
                 <Link
                   key={link.href}

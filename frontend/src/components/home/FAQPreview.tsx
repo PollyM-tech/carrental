@@ -4,6 +4,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, ChevronDown } from "lucide-react";
+import { rentalTerms } from "@/config/rental-policy";
 
 const faqs = [
   {
@@ -34,14 +35,16 @@ const faqs = [
     id: "payment",
     question: "How can I pay for my rental?",
     answer:
-      "Payments will use an M-Pesa Buy Goods till. Where STK Push is available, you can use the prompt; if it fails, pay manually and submit your M-Pesa transaction code for verification. A submitted code does not confirm payment. Our team will confirm the till details before you pay.",
+      rentalTerms.payment + " Payments will use an M-Pesa Buy Goods till. Where STK Push is available, you can use the prompt; if it fails, pay manually and submit your M-Pesa transaction code for verification. A submitted code does not confirm payment. Our team will confirm the till details before you pay.",
   },
   {
     id: "deposit",
     question: "Is a security deposit required?",
     answer:
-      "Security deposit requirements may vary depending on the selected vehicle and rental terms. Any applicable deposit, refund conditions, and deductions will be explained before booking confirmation.",
+      rentalTerms.deposit,
   },
+  { id: "failed-handover", question: "What happens if I fail the checks at handover?", answer: rentalTerms.failedHandover },
+  { id: "no-show", question: "What if I miss my agreed pickup time?", answer: rentalTerms.noShow },
   {
     id: "fuel",
     question: "What is your fuel policy?",
@@ -52,13 +55,13 @@ const faqs = [
     id: "insurance",
     question: "Is insurance included in the rental?",
     answer:
-      "Insurance terms depend on the vehicle and rental agreement. Our team can explain the applicable cover, exclusions, excess amounts, and customer responsibilities before you confirm your rental.",
+      "Insurance cover, exclusions, excess and customer liability for damage or theft are set out in the manually signed contract. Ask our team to explain the terms for your vehicle before committing to the rental.",
   },
   {
     id: "cancellation",
     question: "Can I change or cancel my booking?",
     answer:
-      "Please contact our team as early as possible if your plans change. Booking changes and cancellations are subject to the agreed rental terms and vehicle availability.",
+      "Contact our team as early as possible. Cancellation deadlines and fees are set out in the manually signed contract. Changes depend on vehicle availability.",
   },
   {
     id: "long-term",
