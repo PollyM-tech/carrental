@@ -3,7 +3,8 @@ export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
     const [dns, net] = await Promise.all([import("node:dns"), import("node:net")]);
     dns.setDefaultResultOrder("ipv4first");
-    // Keep both address families available, but allow a realistic connection window.
-    net.setDefaultAutoSelectFamilyAttemptTimeout(1000);
+    // Allow slower address-family connection establishment.
+    net.setDefaultAutoSelectFamilyAttemptTimeout(2000);
+    if (process.env.MOVARA_IPV4_ONLY === "true") net.setDefaultAutoSelectFamily(false);
   }
 }

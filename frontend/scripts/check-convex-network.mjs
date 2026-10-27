@@ -1,11 +1,8 @@
 import assert from "node:assert/strict";
-import dns from "node:dns";
-import net from "node:net";
+import "./node-network.mjs";
 import { ConvexHttpClient } from "convex/browser";
 import { makeFunctionReference } from "convex/server";
 
-dns.setDefaultResultOrder("ipv4first");
-net.setDefaultAutoSelectFamilyAttemptTimeout(1000);
 const url = process.env.NEXT_PUBLIC_CONVEX_URL;
 if (!url) throw new Error("NEXT_PUBLIC_CONVEX_URL is required.");
 const client = new ConvexHttpClient(url, { logger: false });

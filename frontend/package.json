@@ -8,15 +8,18 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint",
-    "convex:dev": "convex dev",
+    "convex:dev": "node --import ./scripts/node-network.mjs ./node_modules/convex/bin/main.js dev",
     "convex:auth:setup": "node scripts/configure-convex-auth.mjs",
-    "test:auth": "node --experimental-strip-types tests/convex-auth.test.mjs && node --experimental-strip-types tests/auth-routing.test.mjs && node --experimental-strip-types tests/customer-bookings.test.mjs",
+    "test:auth": "node --experimental-strip-types tests/convex-auth.test.mjs && node --experimental-strip-types tests/auth-routing.test.mjs && node --experimental-strip-types tests/customer-bookings.test.mjs && node tests/password-provider.test.mjs",
     "convex:auth:check": "node --env-file=.env.local scripts/check-convex-auth.mjs",
     "convex:network:check": "node --env-file=.env.local scripts/check-convex-network.mjs",
     "test:vehicles": "node --experimental-strip-types tests/vehicles.test.mjs",
     "test:rentals": "node --experimental-strip-types tests/rental-checks.test.mjs",
     "test:workflow": "node tests/workflow-handlers.test.mjs",
-    "test:security": "node --experimental-strip-types tests/session-security.test.mjs"
+    "test:security": "node --experimental-strip-types tests/session-security.test.mjs",
+    "admin:password": "npm run convex:sync && node scripts/set-admin-password.mjs",
+    "convex:sync": "npm run convex:dev -- --once --typecheck enable --tail-logs disable",
+    "test:connection": "node --experimental-strip-types tests/connection-errors.test.mjs"
   },
   "dependencies": {
     "@auth/core": "^0.41.1",

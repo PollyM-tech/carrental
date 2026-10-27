@@ -67,7 +67,7 @@ export const review = mutation({
     const { user } = await requireRole(ctx, "front_desk");
     const booking = await ctx.db.get(id);
     if (!booking) throw new Error("Booking request not found.");
-    if (["cancelled", "returned", "overdue"].includes(booking.status)) throw new Error("This request is cancelled. Ask the customer to submit a new request.");
+    if (!canEditVerification(booking.status)) throw new Error("Only pending requests can be changed here. Use Cancel approval for an approved booking before handover.");
     await ctx.db.patch(id, { status, updatedAt: Date.now() });
     await ctx.db.insert("accessEvents", { subjectId: booking.customerId, actorId: user._id, action: "booking.request_" + status, occurredAt: Date.now() });
   },
@@ -75,6 +75,7 @@ export const review = mutation({
 
 export const approve = mutation({ args: { id: v.id("movaraBookingRequests") }, handler: async (ctx, { id }) => {
   const { user } = await requireRole(ctx); const booking = await ctx.db.get(id);
+  if (booking?.status === "approved") return;
   if (!booking || !booking.vehicleId || !canEditVerification(booking.status)) throw new Error("This request cannot be approved.");
   const verification = await ctx.db.query("movaraVerification").withIndex("by_booking", q => q.eq("bookingId", id)).unique();
   if (verification?.status !== "approved") throw new Error("Complete and approve the in-person identity, licence and contact checks first.");
@@ -85,6 +86,23 @@ export const approve = mutation({ args: { id: v.id("movaraBookingRequests") }, h
   const rentals = await ctx.db.query("movaraBookingRequests").withIndex("by_vehicle", q => q.eq("vehicleId", vehicle._id)).collect();
   bookingDates(booking.pickupDate, booking.returnDate);
   if (!availableFor(vehicle, booking.pickupDate, booking.returnDate, blocks) || reservedConflict(rentals, booking.pickupDate, booking.returnDate, id)) throw new Error("This car is no longer available or compliant for these dates.");
-  await ctx.db.patch(id, { status: "approved", updatedAt: Date.now() });
+  await ctx.db.patch(id, { status: "approved", approvalVersion: (booking.approvalVersion ?? 0) + 1, updatedAt: Date.now() });
   await ctx.db.insert("accessEvents", { subjectId: booking.customerId, actorId: user._id, action: `booking.approved:${id}`, occurredAt: Date.now() });
 }});
+
+export const cancelApproval = mutation({
+  args: { id: v.id("movaraBookingRequests"), approvalVersion: v.number(), notHandedOverConfirmed: v.boolean() },
+  handler: async (ctx, { id, approvalVersion, notHandedOverConfirmed }) => {
+    const { user } = await requireRole(ctx);
+    const booking = await ctx.db.get(id);
+    if (!booking) throw new Error("Booking not found.");
+    if (!notHandedOverConfirmed) throw new Error("Confirm the vehicle has not been handed over before cancelling approval.");
+    if ((booking.approvalVersion ?? 0) !== approvalVersion) throw new Error("The approval has changed. Review the current booking before cancelling it.");
+    if (booking.status === "in_review") return;
+    if (booking.status !== "approved") throw new Error("Only an approved booking can have its approval cancelled.");
+    const outcome = await ctx.db.query("movaraReturnRecords").withIndex("by_booking", q => q.eq("bookingId", id)).first();
+    if (outcome) throw new Error("A rental outcome is already recorded. Approval cannot be cancelled.");
+    await ctx.db.patch(id, { status: "in_review", updatedAt: Date.now() });
+    await ctx.db.insert("accessEvents", { subjectId: booking.customerId, actorId: user._id, action: `booking.approval_cancelled:${id}`, occurredAt: Date.now() });
+  },
+});

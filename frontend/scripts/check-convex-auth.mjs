@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 function convex(args) {
-  return spawnSync(process.execPath, ["node_modules/convex/bin/main.js", ...args], { encoding: "utf8", timeout: 45000 });
+  return spawnSync(process.execPath, ["--import", new URL("./node-network.mjs", import.meta.url).href, "node_modules/convex/bin/main.js", ...args], { encoding: "utf8", timeout: 45000 });
 }
 const account = convex(["run", "accounts:current", "{}"]);
 assert.equal(account.status, 0, "The account query must be deployed and callable.");

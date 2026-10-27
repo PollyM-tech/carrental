@@ -34,6 +34,7 @@ export default defineSchema({
     vehicleId: v.optional(v.id("movaraVehicles")),
     dailyRateKes: v.optional(v.number()),
     estimatedRentalKes: v.optional(v.number()),
+    approvalVersion: v.optional(v.number()),
     pickupDate: v.string(),
     returnDate: v.string(),
     rentalDays: v.number(),

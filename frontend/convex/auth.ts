@@ -1,3 +1,4 @@
+import { materializeCredentials } from "./lib/credentials";
 import { Password } from "@convex-dev/auth/providers/Password";
 import { convexAuth } from "@convex-dev/auth/server";
 import type { DataModel } from "./_generated/dataModel";
@@ -6,12 +7,12 @@ import { internal } from "./_generated/api";
 import { prepareCredentialGuard } from "./lib/session_guard";
 import { passwordProfile, OWNER_EMAIL, validateNewPassword } from "./lib/identity";
 
-const password = Password<DataModel>({
+const password = materializeCredentials(Password<DataModel>({
     validatePasswordRequirements: validateNewPassword,
     profile(params) {
       return passwordProfile(params, process.env.MOVARA_OWNER_SETUP_SECRET);
     },
-  });
+  }));
 const originalAuthorize = password.authorize!;
 password.authorize = async (params, ctx) => {
   if (params.flow !== "signIn" && params.flow !== "signUp") return originalAuthorize(params, ctx);

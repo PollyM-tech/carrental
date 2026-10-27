@@ -30,13 +30,5 @@ export const rentalTerms = {
   contract: "Contracts are signed manually at handover. Cancellation deadlines and fees, insurance cover, exclusions, excess and liability for damage or theft are set out in the contract. Ask Movara to explain these terms before committing to the rental.",
   driver: "Self-drive drivers must be at least 22 and have held a licence for at least two years. Guarantor and next-of-kin contacts/details are required for every vehicle. KYC review targets 30 minutes and must be completed before handover. Additional drivers and chauffeur hire are available where applicable. Cross-border travel is unavailable.",
   pricing: "Rental pricing uses flat daily or agreed market rates confirmed before payment.",
-  tracking: "GPS trackers are provided by the vehicle owners. Tamper alerts are required; device, supplier, subscription details and alert setup must be confirmed for each vehicle.",
+  tracking: "GPS trackers are provided by the vehicle owners. Tamper alerts are required.",
 } as const;
-
-export const pendingRentalDetails = [
-  "Security deposit amounts for each vehicle category, following the client's research.",
-  "Deposit refund timing, deductions and settlement procedure.",
-  "Contract copy containing cancellation deadlines/fees and insurance cover, excess and damage/theft liability.",
-  "How transaction costs are established and the refund processing timeframe.",
-  "Owner-supplied tracker device, supplier, subscription details and tested tamper alerts for each vehicle.",
-] as const;

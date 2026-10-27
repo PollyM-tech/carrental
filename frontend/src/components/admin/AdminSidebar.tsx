@@ -144,7 +144,7 @@ export default function AdminSidebar({
             aria-label="Admin navigation"
             className="flex-1 space-y-1 px-3 py-3"
           >
-            {navLinks.filter(link => visible(link.href)).map((link) => {
+            {navLinks.filter(link => visible(link.href) && (!availablePaths || availablePaths.includes(link.href))).map((link) => {
               const Icon = link.icon;
 
               const isActive =
@@ -152,7 +152,6 @@ export default function AdminSidebar({
                 (link.href !== "/dashboard" &&
                   pathname.startsWith(`${link.href}/`));
 
-              if (availablePaths && !availablePaths.includes(link.href)) return <div key={link.href} aria-disabled="true" title="This tool is being prepared" className="flex min-h-11 items-center gap-3 rounded-lg px-3.5 py-2.5 text-[13px] text-slate-500"><Icon size={19} /><span className="truncate">{link.label}</span><span className="ml-auto text-[10px]">Soon</span></div>;
               return (
                 <Link
                   key={link.href}

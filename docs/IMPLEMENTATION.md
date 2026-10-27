@@ -64,3 +64,24 @@ real customer's records during cleanup. No real identity files or payments were
 used. The temporary helper backup and cleanup retry scripts are under `/tmp` in
 this working session; clean synthetic records before the final sync removes the
 old deployed helpers. Never share or reset the real owner's password for tests.
+
+Session-security source update: both portals warn at 30 idle minutes and expire
+at 31; protected operations validate the session, credentials and activity on the
+backend. Login failures use a shared account key, five-attempt limit and a
+15-minute lock; signup and concurrent attempts are covered. Password maintenance
+now uses `security:resetOwnerPassword` to update the hash and revoke sessions in
+one transaction. Normal credential changes are also detected by protected APIs.
+Local security/handler tests, typecheck, lint (existing warnings) and production
+build passed. Live sync remains blocked by the Convex connection timeout; do not
+claim these controls are active until the final sync and live tests pass.
+
+Password-provider fix and live recovery (27 October 2026): Convex sync succeeded.
+The Password factory stores its implementation under `options`; the shared
+credentials helper resolves that layer before hashing or wrapping authorize.
+Provider tests now exercise actual hashing/verification and the original authorize
+implementation. The corrected backend was deployed to the configured development
+project. The requested owner password was reset successfully, owner sign-in was
+verified, and previous/verification sessions were revoked. No password or token is
+stored in these notes. Earlier network-blocked sync/reset status is superseded;
+the broader live workflow checks and any historical synthetic-account cleanup
+remain separate, unverified items.

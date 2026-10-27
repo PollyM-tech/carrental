@@ -7,7 +7,7 @@ import { spawnSync } from "node:child_process";
 
 // No secret values are printed or included in shell commands.
 function convex(args) {
-  const result = spawnSync(process.execPath, ["node_modules/convex/bin/main.js", "env", ...args], { encoding: "utf8", timeout: 45000 });
+  const result = spawnSync(process.execPath, ["--import", new URL("./node-network.mjs", import.meta.url).href, "node_modules/convex/bin/main.js", "env", ...args], { encoding: "utf8", timeout: 45000 });
   if (result.status !== 0) throw new Error("Convex environment update failed. Check CLI login/network and retry; secret output was suppressed.");
   return result.stdout.trim();
 }

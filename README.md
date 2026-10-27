@@ -217,3 +217,70 @@ is recorded. A flag blocks approval; an explicit second chance allows a fresh
 review without deleting history. A later good return never silently clears a flag.
 
 Run `npm run test:rentals` with the frontend auth and vehicle checks.
+
+## Session security — 27 October 2026
+
+Both admin and customer sessions warn after 30 minutes without interaction and
+expire after 31 minutes. The warning offers Stay signed in / Sign out. Expiry is
+checked by protected Convex queries/mutations as well as the browser. Page polling,
+focus and background updates do not renew activity; reopening an expired tab
+cannot renew the expired session. Activity is batched at 15-second intervals.
+
+Five unsuccessful password attempts trigger a 15-minute account lock across
+browsers and both portals. Registration is covered too because Convex Auth can
+match an existing password account through its signup flow. Attempt slots are
+reserved transactionally to prevent concurrent requests exceeding five in flight.
+A correct attempt resets the failure streak; expired abandoned attempts free slots.
+
+Credential guards reject stale credentials on every protected request. The
+CLI-only password-maintenance mutation changes the stored hash and revokes old
+sessions/refresh tokens atomically. Other credential changes immediately deny old
+sessions access, and the next authenticated login deletes the older sessions.
+The maintenance script reads a password from stdin; passwords are not stored in
+source. Existing pre-rollout sessions must sign in again to initialize the guard.
+
+Run `npm run test:security`, `npm run test:auth` and `npm run test:workflow` from
+`frontend`. As with the other pending changes, these protections require a
+successful Convex sync; local verification does not mean the deployment is live.
+
+To reset the existing admin password without remembering the old one, run
+`npm run admin:password` from `frontend`. This syncs the configured development
+backend, prompts twice for the new password without echoing it, changes the
+password hash, revokes existing sessions and verifies admin sign-in. It does not
+create a duplicate account or place the password in source files. A working
+Convex connection and authenticated CLI are required. The admin account remains
+`movaracarhire@gmail.com`; sign in at `/movara-access`.
+
+If Convex fails while authorizing with `TypeError: fetch failed`, the password
+reset has not reached its write step. Use `npm run convex:dev` rather than plain
+`npx convex dev` to include the project's shared Node network settings. The
+password-reset and auth-maintenance commands use the same preload in child CLIs.
+`MOVARA_IPV4_ONLY=true npm run convex:dev` is an optional IPv4-only diagnostic;
+it does not fix an unreachable or intermittent internet connection.
+
+Compare `curl.exe -I --connect-timeout 10 https://api.convex.dev` in Windows
+PowerShell and `curl -4 -I --connect-timeout 10 https://api.convex.dev` in WSL.
+If both fail, test another internet connection and review any VPN/proxy setup.
+If Windows works consistently but WSL fails, save WSL work, run `wsl --shutdown`
+in PowerShell, reopen Ubuntu and retry. Shutting down WSL stops its running apps.
+Do not disable TLS verification or paste Convex tokens into chat for this error.
+
+Password reset helper correction (27 October 2026): hashing and authorize wrapping
+now resolve the Password provider's options layer. Regression checks run under
+`npm run test:auth`. The corrected development backend has been synced and the
+owner's requested password reset/sign-in verified; all previous/test sessions
+were revoked. No password is recorded in this repository.
+
+Auth navigation recovery: sign-in, customer workspace and dashboard now share the
+same `(convex)` layout/provider. The dashboard source moved from `(admin)` into
+that route group without changing its `/dashboard` URL. A fresh storage namespace
+ignores stale browser refresh flags from earlier sessions. Missing-refresh-cookie
+requests clear the stale auth cookies and return a signed-out result, with the
+SDK's same-origin rules preserved. Connection failures show retry screens instead
+of exposing a raw runtime error; account reads retry once without retrying writes.
+Restart the development server after the route/environment changes. IPv4-only
+routing is enabled in this host's ignored `.env.local`; deployment defaults remain
+unchanged. HTTP checks verified stale-cookie recovery, CORS rejection, owner login,
+both auth cookies and the dashboard response. Only the test session was signed out.
+
+Remaining development work and pending client details are tracked in [docs/REMAINING_TASKS.md](docs/REMAINING_TASKS.md), outside the application UI.
