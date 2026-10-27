@@ -17,6 +17,7 @@ function ContactForm({ data, bookingId, editable }: { data: Details; bookingId: 
   const [form, setForm] = useState({ fullName: data?.fullName ?? "", nextOfKinName: data?.nextOfKinName ?? "", nextOfKinPhone: data?.nextOfKinPhone ?? "", guarantorName: data?.guarantorName ?? "", guarantorPhone: data?.guarantorPhone ?? "" });
   const [consent, setConsent] = useState(false); const [busy, setBusy] = useState(false); const [message, setMessage] = useState("");
   const labels = { awaiting_in_person: "Bring your original documents for checking", approved: "In-person checks approved", needs_correction: "Contact details need correction", rejected: "Checks not approved — contact Movara" };
+  if (data?.manualClearanceRecorded) return <section className="space-y-2 rounded-xl bg-slate-50 p-4"><h4 className="font-bold">In-person identification approved</h4><p className="text-sm">Your signed paper contract and completed in-person requirements have been recorded by Movara. Contact Movara if your details need correction.</p></section>;
   return <form className="space-y-3 rounded-xl bg-slate-50 p-4" onSubmit={async event => {
     event.preventDefault(); setBusy(true); setMessage("");
     try { await submit({ ...form, bookingId, consentToContacts: consent }); setMessage("Details saved. Bring your original ID/passport and driving licence to the agreed identification appointment."); }

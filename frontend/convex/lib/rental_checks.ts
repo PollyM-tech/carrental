@@ -4,8 +4,10 @@ export function reservedConflict(rows: RentalState[], start: string, end: string
 }
 export function canEditVerification(status: string) { return status === "requested" || status === "in_review"; }
 export function requireVerificationChecks(checks: { phoneChecked: boolean; identityChecked: boolean; licenceChecked: boolean; ageChecked: boolean; licenceTenureChecked: boolean; contactsChecked: boolean }) {
-  if (!Object.values(checks).every(Boolean)) throw new Error("Check original identity and licence documents, minimum age 22, two years holding a licence, the customer phone, and guarantor/next-of-kin contacts before approving.");
+  if (!(["phoneChecked", "identityChecked", "licenceChecked", "ageChecked", "licenceTenureChecked", "contactsChecked"] as const).every(key => checks[key] === true)) throw new Error("Check original identity and licence documents, minimum age 22, two years holding a licence, the customer phone, and guarantor/next-of-kin contacts before approving.");
 }
 export function requireReturnOutcome(condition: string, rules: boolean, disposition: string) {
   if ((condition !== "good" || !rules) && disposition === "clear") throw new Error("For an issue, choose Flag customer or Give a second chance and record your findings.");
 }
+
+export const IN_PERSON_APPROVED_MESSAGE = "In-person identity, licence and contact checks completed.";

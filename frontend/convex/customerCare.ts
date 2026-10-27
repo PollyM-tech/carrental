@@ -3,13 +3,18 @@ import { mutation, query } from "./_generated/server";
 import { requireRole, requireUser } from "./lib/permissions";
 import { normalisePhone } from "./lib/identity";
 import { requiredText } from "./lib/vehicle_rules";
-import { canEditVerification, requireVerificationChecks, requireReturnOutcome } from "./lib/rental_checks";
+import { canEditVerification, requireVerificationChecks, requireReturnOutcome, IN_PERSON_APPROVED_MESSAGE } from "./lib/rental_checks";
 
 export const mine = query({ args: { bookingId: v.id("movaraBookingRequests") }, handler: async (ctx, { bookingId }) => {
   const user = await requireUser(ctx); const booking = await ctx.db.get(bookingId);
   if (!booking || booking.customerId !== user._id) throw new Error("Booking not found.");
   const verification = await ctx.db.query("movaraVerification").withIndex("by_booking", q => q.eq("bookingId", bookingId)).unique();
-  return verification ? { updatedAt: verification.updatedAt, revision: verification.revision ?? 0, fullName: verification.fullName, nextOfKinName: verification.nextOfKinName, nextOfKinPhone: verification.nextOfKinPhone, guarantorName: verification.guarantorName, guarantorPhone: verification.guarantorPhone, method: verification.method, status: verification.status, customerMessage: verification.customerMessage ?? "" } : null;
+  if (booking.manualClearance) return {
+    manualClearanceRecorded: true, updatedAt: booking.manualClearance.recordedAt, revision: verification?.revision ?? 0,
+    fullName: verification?.fullName ?? "", nextOfKinName: verification?.nextOfKinName ?? "", nextOfKinPhone: verification?.nextOfKinPhone ?? "", guarantorName: verification?.guarantorName ?? "", guarantorPhone: verification?.guarantorPhone ?? "",
+    method: "in_person" as const, status: "approved" as const, customerMessage: "In-person requirements confirmed under your signed paper rental contract.",
+  };
+  return verification ? { manualClearanceRecorded: false, updatedAt: verification.updatedAt, revision: verification.revision ?? 0, fullName: verification.fullName, nextOfKinName: verification.nextOfKinName, nextOfKinPhone: verification.nextOfKinPhone, guarantorName: verification.guarantorName, guarantorPhone: verification.guarantorPhone, method: verification.method, status: verification.status, customerMessage: verification.customerMessage ?? "" } : null;
 }});
 export const submit = mutation({ args: { bookingId: v.id("movaraBookingRequests"), fullName: v.string(), nextOfKinName: v.string(), nextOfKinPhone: v.string(), guarantorName: v.string(), guarantorPhone: v.string(), consentToContacts: v.boolean() }, handler: async (ctx, args) => {
   const user = await requireUser(ctx); const booking = await ctx.db.get(args.bookingId);
@@ -34,7 +39,7 @@ export const review = mutation({ args: { bookingId: v.id("movaraBookingRequests"
   if ((current.revision ?? 0) !== args.verificationRevision) throw new Error("Customer details changed. Review the updated details before saving your checks.");
   const checks = { phoneChecked: args.phoneChecked, identityChecked: args.identityChecked, licenceChecked: args.licenceChecked, ageChecked: args.ageChecked, licenceTenureChecked: args.licenceTenureChecked, contactsChecked: args.contactsChecked };
   if (args.decision === "approved") requireVerificationChecks(checks);
-  const customerMessage = requiredText(args.customerMessage, "Customer-facing review message", 1000);
+  const customerMessage = requiredText(args.customerMessage.trim() || (args.decision === "approved" ? IN_PERSON_APPROVED_MESSAGE : ""), "Customer-facing review message", 1000);
   await ctx.db.patch(current._id, { ...checks, status: args.decision, customerMessage, reviewedAt: Date.now(), reviewedBy: user._id, updatedAt: Date.now() });
   await ctx.db.insert("accessEvents", { subjectId: booking.customerId, actorId: user._id, action: `verification.${args.decision}:${booking._id}`, occurredAt: Date.now() });
 }});

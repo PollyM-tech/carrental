@@ -35,6 +35,7 @@ export default defineSchema({
     dailyRateKes: v.optional(v.number()),
     estimatedRentalKes: v.optional(v.number()),
     approvalVersion: v.optional(v.number()),
+    manualClearance: v.optional(v.object({ contractSigned: v.boolean(), requirementsMet: v.boolean(), recordedAt: v.number() })),
     pickupDate: v.string(),
     returnDate: v.string(),
     rentalDays: v.number(),

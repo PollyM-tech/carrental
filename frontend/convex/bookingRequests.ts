@@ -2,8 +2,8 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireRole, requireUser } from "./lib/permissions";
 import { normalisePhone } from "./lib/identity";
-import { availableFor, rentalEstimate } from "./lib/vehicle_rules";
-import { reservedConflict, canEditVerification } from "./lib/rental_checks";
+import { availableFor, rentalEstimate, requiredText } from "./lib/vehicle_rules";
+import { reservedConflict, canEditVerification, requireVerificationChecks, IN_PERSON_APPROVED_MESSAGE } from "./lib/rental_checks";
 import { bookingDates, bookingText, requireBookingOwner } from "./lib/booking_input";
 
 export const mine = query({
@@ -73,12 +73,23 @@ export const review = mutation({
   },
 });
 
-export const approve = mutation({ args: { id: v.id("movaraBookingRequests") }, handler: async (ctx, { id }) => {
+export const approve = mutation({ args: {
+  id: v.id("movaraBookingRequests"),
+  manualClearance: v.optional(v.object({ contractSigned: v.boolean(), requirementsMet: v.boolean() })),
+  verification: v.optional(v.object({ revision: v.number(), updatedAt: v.number(), phoneChecked: v.boolean(), identityChecked: v.boolean(), licenceChecked: v.boolean(), ageChecked: v.boolean(), licenceTenureChecked: v.boolean(), contactsChecked: v.boolean(), customerMessage: v.string() })),
+}, handler: async (ctx, { id, verification: submitted, manualClearance }) => {
   const { user } = await requireRole(ctx); const booking = await ctx.db.get(id);
   if (booking?.status === "approved") return;
   if (!booking || !booking.vehicleId || !canEditVerification(booking.status)) throw new Error("This request cannot be approved.");
   const verification = await ctx.db.query("movaraVerification").withIndex("by_booking", q => q.eq("bookingId", id)).unique();
-  if (verification?.status !== "approved") throw new Error("Complete and approve the in-person identity, licence and contact checks first.");
+  if (manualClearance && submitted) throw new Error("Choose either signed-contract clearance or the verification checklist.");
+  if (manualClearance) {
+    if (!manualClearance.contractSigned || !manualClearance.requirementsMet) throw new Error("Confirm the paper contract is signed and all in-person requirements are met before approving.");
+  } else if (submitted) {
+    if (!verification) throw new Error("The customer must save their name, next-of-kin and guarantor contacts first.");
+    if ((verification.revision ?? 0) !== submitted.revision || verification.updatedAt !== submitted.updatedAt) throw new Error("Verification details changed. Review the latest checks before approving.");
+    requireVerificationChecks(submitted);
+  } else if (verification?.status !== "approved") throw new Error("Complete and approve the in-person identity, licence and contact checks first.");
   const standing = await ctx.db.query("movaraCustomerStanding").withIndex("by_customer", q => q.eq("customerId", booking.customerId)).unique();
   if (standing?.status === "flagged") throw new Error("This customer is flagged. Record an explicit second-chance decision before approving another rental.");
   const vehicle = await ctx.db.get(booking.vehicleId); if (!vehicle) throw new Error("Vehicle not found.");
@@ -86,8 +97,14 @@ export const approve = mutation({ args: { id: v.id("movaraBookingRequests") }, h
   const rentals = await ctx.db.query("movaraBookingRequests").withIndex("by_vehicle", q => q.eq("vehicleId", vehicle._id)).collect();
   bookingDates(booking.pickupDate, booking.returnDate);
   if (!availableFor(vehicle, booking.pickupDate, booking.returnDate, blocks) || reservedConflict(rentals, booking.pickupDate, booking.returnDate, id)) throw new Error("This car is no longer available or compliant for these dates.");
-  await ctx.db.patch(id, { status: "approved", approvalVersion: (booking.approvalVersion ?? 0) + 1, updatedAt: Date.now() });
-  await ctx.db.insert("accessEvents", { subjectId: booking.customerId, actorId: user._id, action: `booking.approved:${id}`, occurredAt: Date.now() });
+  if (submitted && verification) {
+    const checks = { phoneChecked: submitted.phoneChecked, identityChecked: submitted.identityChecked, licenceChecked: submitted.licenceChecked, ageChecked: submitted.ageChecked, licenceTenureChecked: submitted.licenceTenureChecked, contactsChecked: submitted.contactsChecked };
+    const customerMessage = requiredText(submitted.customerMessage.trim() || IN_PERSON_APPROVED_MESSAGE, "Customer-facing review message", 1000);
+    await ctx.db.patch(verification._id, { ...checks, customerMessage, status: "approved", reviewedBy: user._id, reviewedAt: Date.now(), updatedAt: Date.now() });
+    await ctx.db.insert("accessEvents", { subjectId: booking.customerId, actorId: user._id, action: `verification.approved:${id}`, occurredAt: Date.now() });
+  }
+  await ctx.db.patch(id, { status: "approved", approvalVersion: (booking.approvalVersion ?? 0) + 1, manualClearance: manualClearance ? { ...manualClearance, recordedAt: Date.now() } : undefined, updatedAt: Date.now() });
+  await ctx.db.insert("accessEvents", { subjectId: booking.customerId, actorId: user._id, action: `booking.${manualClearance ? "approved_in_person" : "approved"}:${id}`, occurredAt: Date.now() });
 }});
 
 export const cancelApproval = mutation({
@@ -102,7 +119,7 @@ export const cancelApproval = mutation({
     if (booking.status !== "approved") throw new Error("Only an approved booking can have its approval cancelled.");
     const outcome = await ctx.db.query("movaraReturnRecords").withIndex("by_booking", q => q.eq("bookingId", id)).first();
     if (outcome) throw new Error("A rental outcome is already recorded. Approval cannot be cancelled.");
-    await ctx.db.patch(id, { status: "in_review", updatedAt: Date.now() });
+    await ctx.db.patch(id, { status: "in_review", manualClearance: undefined, updatedAt: Date.now() });
     await ctx.db.insert("accessEvents", { subjectId: booking.customerId, actorId: user._id, action: `booking.approval_cancelled:${id}`, occurredAt: Date.now() });
   },
 });

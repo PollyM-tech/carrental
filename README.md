@@ -284,3 +284,29 @@ unchanged. HTTP checks verified stale-cookie recovery, CORS rejection, owner log
 both auth cookies and the dashboard response. Only the test session was signed out.
 
 Remaining development work and pending client details are tracked in [docs/REMAINING_TASKS.md](docs/REMAINING_TASKS.md), outside the application UI.
+
+Booking approval controls: saved in-person checks remain visible after review.
+Once a booking is approved, its approval section shows a disabled Approved button
+and a Cancel approval action. Cancellation requires confirmation that the car
+has not been handed over, releases the reservation and returns the booking to
+review without deleting verification. Completed/non-return rentals cannot have
+approval cancelled. Approval versions reject stale cancellation requests, and
+repeat approval/cancellation requests are idempotent.
+
+Approval flow correction: ticking manual checks no longer requires a separate
+verification-save click before approving a booking. The approval action validates
+all six explicit checks and the current customer-detail snapshot, then saves
+verification and the reservation together. Missing checks are reported in the
+form before submission. Availability or eligibility failure leaves verification
+unchanged. Approval can use a standard customer-facing confirmation when no
+custom message is provided; correction/rejection still require a message.
+
+Signed-contract in-person approval: an owner can confirm the customer's paper
+contract is signed and all physical ID/licence, phone, age/licence-tenure and
+contact requirements are met, with guarantor/next-of-kin details recorded in the
+signed contract. This route does not require an online verification profile.
+The booking stores the clearance and confirmation time; operational events record
+the approving owner. It still enforces customer flags, dates, vehicle compliance
+and reservation conflicts. Customers see their in-person clearance as approved.
+Cancel approval before handover releases the dates, clears current clearance and
+returns the booking to review, preserving the previous operational event.
