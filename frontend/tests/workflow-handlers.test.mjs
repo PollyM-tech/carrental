@@ -56,9 +56,10 @@ test('full in-person booking, approval and return flow enforces ownership and st
  }
  await db.insert('staffMemberships',{userId:owner,roles:['owner'],active:true});
  await db.insert('staffMemberships',{userId:other,roles:['owner'],active:true});
- const car=await db.insert('movaraVehicles',{name:'Test',category:'SUV',registration:'TEST123',archived:false,published:true,status:'available',insuranceExpiresOn:date(365),inspectionExpiresOn:date(365),pricePerDay:3500,seats:5,transmission:'Automatic',fuel:'Petrol',brand:'Test',model:'Test',location:'Nairobi',description:'',isFeatured:false});
+ const car=await db.insert('movaraVehicles',{name:'Test',category:'SUV',registration:'TEST123',archived:false,published:true,status:'available',insuranceExpiresOn:date(365),inspectionExpiresOn:date(365),pricePerDay:3500,seats:5,transmission:'Automatic',fuel:'Petrol',brand:'Test',model:'Test',location:'Nairobi',description:'',isFeatured:true});
  const request=(who,start=10)=>run(bookings,'create',who,{vehicleId:car,requestKey:crypto.randomUUID(),pickupDate:date(start),returnDate:date(start+3),pickupLocation:'Nairobi',phone:'+447700900123'});
  const first=await request(customer), overlap=await request(other), later=await request(other,20);
+ assert.equal((await run(vehicles,'publicList',null,{})).length,1); // Pending requests do not hide a car.
  const contacts={fullName:'Test Customer',nextOfKinName:'Test Kin',nextOfKinPhone:'+12025550123',guarantorName:'Test Guarantor',guarantorPhone:'+447700900123',consentToContacts:true};
  await assert.rejects(run(care,'submit',other,{bookingId:first,...contacts}),/cannot be changed/);
  await assert.rejects(run(care,'adminDetail',other,{bookingId:first}),/permission/);
@@ -75,6 +76,7 @@ test('full in-person booking, approval and return flow enforces ownership and st
  await assert.rejects(run(bookings,'approve',owner,{id:first}),/in-person/);
  await run(care,'review',owner,await approval(first));
  await run(bookings,'approve',owner,{id:first});
+ assert.equal((await run(vehicles,'publicList',null,{})).length,0); // Approval removes it from Featured/all-cars feeds.
  const firstVersion=(await db.get(first)).approvalVersion;
  await run(bookings,'approve',owner,{id:first});
  assert.equal((await db.get(first)).approvalVersion,firstVersion);
@@ -84,6 +86,7 @@ test('full in-person booking, approval and return flow enforces ownership and st
  await assert.rejects(run(bookings,'review',owner,{id:first,status:'in_review'}),/Cancel approval/);
  await run(bookings,'cancelApproval',owner,{id:first,approvalVersion:firstVersion,notHandedOverConfirmed:true});
  assert.equal((await db.get(first)).status,'in_review');
+ assert.equal((await run(vehicles,'publicList',null,{})).length,1);
  assert.equal((await run(care,'adminDetail',owner,{bookingId:first})).verification.status,'approved');
  assert.equal((await run(vehicles,'publicList',null,{pickupDate:date(10),returnDate:date(13)})).length,1);
  await run(bookings,'cancelApproval',owner,{id:first,approvalVersion:firstVersion,notHandedOverConfirmed:true});
@@ -146,7 +149,10 @@ test('full in-person booking, approval and return flow enforces ownership and st
  const own=await run(care,'mine',customer,{bookingId:first});assert.equal(own.fullName,'Updated Name');assert.equal('reviewedBy' in own,false);
  await run(care,'setStanding',owner,{customerId:customer,status:'second_chance',reason:'Car recovered, new review allowed'});
  await request(customer,30);
+ assert.equal((await run(vehicles,'publicList',null,{})).length,0); // Another approved rental keeps it hidden.
  await run(care,'recordReturn',owner,{bookingId:later,condition:'damage',rulesFollowed:false,disposition:'flagged',notes:'Damage recorded under contract',handedOverConfirmed:true});
+ assert.equal((await run(vehicles,'publicList',null,{})).length,1); // The last approved rental is returned.
+ assert.equal((await run(vehicles,'publicList',null,{}))[0].isFeatured,true); // Preserve the owner's Featured setting.
  assert.equal((await db.get(later)).status,'returned');
  // Actual session handlers reject expired activity and never revive it on a heartbeat.
  assert.ok(await run(security,'status',customer));

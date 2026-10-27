@@ -36,9 +36,11 @@ export const publicList = query({
     const result = [];
     for (const vehicle of vehicles) {
       if (!catalogueReady(vehicle)) continue;
+      const rentals = await ctx.db.query("movaraBookingRequests").withIndex("by_vehicle", q => q.eq("vehicleId", vehicle._id)).collect();
+      // Without selected dates, the website shows only cars with no active reservation.
+      if (!args.pickupDate && rentals.some(rental => rental.status === "approved" || rental.status === "overdue")) continue;
       if (args.pickupDate && args.returnDate) {
         const blocks = await ctx.db.query("movaraVehicleBlocks").withIndex("by_vehicle", q => q.eq("vehicleId", vehicle._id)).collect();
-        const rentals = await ctx.db.query("movaraBookingRequests").withIndex("by_vehicle", q => q.eq("vehicleId", vehicle._id)).collect();
         if (!availableFor(vehicle, args.pickupDate, args.returnDate, blocks) || reservedConflict(rentals, args.pickupDate, args.returnDate)) continue;
       }
       result.push(await summary(ctx, vehicle));

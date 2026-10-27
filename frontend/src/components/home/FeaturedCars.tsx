@@ -51,7 +51,7 @@ export default function FeaturedCars() {
         {loading && <p role="status" className="text-center">Loading featured vehicles…</p>}
         {error && <p role="alert" className="text-center text-red-700">{error}</p>}
         {/* Vehicles */}
-        {featuredCars.length === 0 ? (
+        {!loading && !error && (featuredCars.length === 0 ? (
           <div className="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-[#F5F8FF] px-6 py-9 text-center">
             <CarFront
               size={27}
@@ -60,13 +60,12 @@ export default function FeaturedCars() {
             />
 
             <h3 className="mt-3 text-base font-bold text-[#0B1C4D]">
-              Featured Vehicles Coming Soon
+              No Featured Vehicles Available Right Now
             </h3>
 
             <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600">
-              Our featured fleet will appear here.
-              Contact us to ask about available vehicles
-              for your travel dates.
+              No featured vehicles are available at the moment.
+              Browse our fleet or contact us about your travel dates.
             </p>
 
             <Link
@@ -155,7 +154,7 @@ export default function FeaturedCars() {
               </article>
             ))}
           </div>
-        )}
+        ))}
 
         {/* Browse fleet */}
         <div className="mt-8 text-center">
