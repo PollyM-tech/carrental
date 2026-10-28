@@ -72,6 +72,17 @@ export const review = mutation({
     await ctx.db.insert("accessEvents", { subjectId: booking.customerId, actorId: user._id, action: "booking.request_" + status, occurredAt: Date.now() });
   },
 });
+export const reopen = mutation({
+  args: { id: v.id("movaraBookingRequests") },
+  handler: async (ctx, { id }) => {
+    const { user } = await requireRole(ctx, "front_desk");
+    const booking = await ctx.db.get(id);
+    if (!booking) throw new Error("Booking request not found.");
+    if (booking.status !== "cancelled") throw new Error("Only cancelled requests can be reopened.");
+    await ctx.db.patch(id, { status: "in_review", updatedAt: Date.now() });
+    await ctx.db.insert("accessEvents", { subjectId: booking.customerId, actorId: user._id, action: `booking.request_reopened:${id}`, occurredAt: Date.now() });
+  },
+});
 
 export const approve = mutation({ args: {
   id: v.id("movaraBookingRequests"),
