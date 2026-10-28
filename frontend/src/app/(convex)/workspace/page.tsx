@@ -1,5 +1,5 @@
 "use client";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useRef, useState } from "react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
@@ -34,9 +34,8 @@ function BookingWorkspace() {
   const contactSavePending = useRef(false);
   let phoneUnchanged = phone === account?.phone;
   try { phoneUnchanged = normalisePhone(phone) === account?.phone; } catch { /* Show validation feedback if saving invalid input is attempted. */ }
-  useEffect(() => { if (account?.staff) router.replace("/dashboard"); }, [account, router]);
   async function run(action: () => Promise<void>) { setBusy(true); setMessage(""); try { await action(); } catch(e) { setMessage(e instanceof Error ? e.message : "Please retry."); } finally { setBusy(false); } }
-  if (account === undefined || account?.staff) return <main className="p-10 text-center">Opening your {account?.staff ? "admin dashboard" : "booking dashboard"}…</main>;
+  if (account === undefined) return <main className="p-10 text-center">Opening your booking dashboard…</main>;
   if (!account) return <main className="p-10"><Link href="/sign-in" className="underline">Sign in to view your bookings</Link></main>;
   return <main className="mx-auto max-w-5xl space-y-6 px-4 py-10">
     <div className="flex flex-wrap items-center justify-between gap-4"><div><Link href="/" className="inline-flex items-center gap-2 font-semibold text-orange-700 underline underline-offset-4"><span aria-hidden="true">←</span> Back to website</Link><h1 className="mt-2 text-3xl font-bold text-[#0B1C4D]">Your booking dashboard</h1><p className="mt-2 break-all text-sm text-slate-600">{account.email}</p></div><button disabled={actionBusy} className="underline" onClick={() => void run(async () => { await signOut(); router.replace("/sign-in"); })}>Sign out</button></div>

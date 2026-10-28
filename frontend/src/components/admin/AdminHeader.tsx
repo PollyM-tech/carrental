@@ -1,8 +1,11 @@
 
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
+import { api } from "../../../convex/_generated/api";
 import {
   Bell,
   ExternalLink,
@@ -28,6 +31,18 @@ export default function AdminHeader({
   signingOut = false,
 }: AdminHeaderProps) {
   const router = useRouter();
+  const [search, setSearch] = useState("");
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notificationsReadAt, setNotificationsReadAt] = useState(0);
+  useEffect(() => { const saved = window.localStorage.getItem("movara_admin_notifications_read_at"); if (saved) setNotificationsReadAt(Number(saved)); }, []);
+  const vehicles = useQuery(api.vehicles.list);
+  const bookings = useQuery(api.bookingRequests.staffList);
+  const query = search.trim().toLowerCase();
+  const vehicleResults = query ? (vehicles ?? []).filter(vehicle => `${vehicle.name} ${vehicle.registration} ${vehicle.category}`.toLowerCase().includes(query)).slice(0, 5) : [];
+  const bookingResults = query ? (bookings ?? []).filter(booking => `${booking.vehiclePreference} ${booking.email} ${booking.phone}`.toLowerCase().includes(query)).slice(0, 5) : [];
+  const notificationRows = (bookings ?? []).filter(booking => ["requested", "in_review", "approved", "overdue", "returned"].includes(booking.status));
+  const unreadNotifications = notificationRows.filter(booking => booking.updatedAt > notificationsReadAt);
+  const notifications = (notificationsOpen ? notificationRows : unreadNotifications).slice(0, 8);
 
   function handleLogout() {
     if (onSignOut) { onSignOut(); return; }
@@ -67,21 +82,11 @@ export default function AdminHeader({
         </div>
 
         {/* Center: Search will be enabled when Django is ready */}
-        <div className="hidden max-w-md flex-1 lg:block">
-          <div
-            aria-label="Admin search unavailable until backend is connected"
-            className="flex h-10 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-slate-400"
-          >
-            <Search size={17} aria-hidden="true" />
-
-            <span className="truncate text-[13px]">
-              Search cars, bookings, customers...
-            </span>
-
-            <span className="ml-auto shrink-0 text-[10px]">
-              Coming soon
-            </span>
+        <div className="relative hidden max-w-md flex-1 lg:block">
+          <div className="flex h-10 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-slate-500">
+            <Search size={17} aria-hidden="true" /><input aria-label="Search cars, bookings and customers" value={search} onChange={event => setSearch(event.target.value)} placeholder="Search cars, bookings, customers..." className="min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-slate-400" />
           </div>
+          {query && <div className="absolute left-0 right-0 top-12 z-50 space-y-3 rounded-xl border border-slate-200 bg-white p-3 shadow-xl">{vehicleResults.length > 0 && <div><p className="px-2 text-xs font-bold uppercase text-slate-500">Cars</p>{vehicleResults.map(vehicle => <Link key={vehicle._id} href="/dashboard/cars" onClick={() => setSearch("")} className="block rounded-lg px-2 py-2 text-sm hover:bg-slate-50">{vehicle.name} · {vehicle.registration}</Link>)}</div>}{bookingResults.length > 0 && <div><p className="px-2 text-xs font-bold uppercase text-slate-500">Bookings</p>{bookingResults.map(booking => <Link key={booking._id} href={`/dashboard/bookings/${booking._id}`} onClick={() => setSearch("")} className="block rounded-lg px-2 py-2 text-sm hover:bg-slate-50">{booking.vehiclePreference} · {booking.email} · {booking.status}</Link>)}</div>}{vehicleResults.length === 0 && bookingResults.length === 0 && <p className="px-2 py-2 text-sm text-slate-500">No matching cars or bookings.</p>}</div>}
         </div>
 
         {/* Right: Website, notifications and account */}
@@ -100,13 +105,13 @@ export default function AdminHeader({
             </span>
           </Link>
 
-          <span
-            aria-label="Booking notifications are unavailable until Django is connected"
-            title="Notifications will be enabled with Django"
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-400"
-          >
-            <Bell size={19} aria-hidden="true" />
-          </span>
+          <div className="relative">
+            <button type="button" onClick={() => { const next = !notificationsOpen; setNotificationsOpen(next); if (next && notifications.length > 0) { const now = Date.now(); setNotificationsReadAt(now); window.localStorage.setItem("movara_admin_notifications_read_at", String(now)); } }} aria-label="Open booking notifications" title="Booking notifications" className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-orange-200 hover:text-orange-700">
+              <Bell size={19} aria-hidden="true" />
+              {unreadNotifications.length > 0 && <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-orange-600 px-1 text-center text-[10px] font-bold text-white">{unreadNotifications.length}</span>}
+            </button>
+            {notificationsOpen && <div className="absolute right-0 top-12 z-50 w-80 rounded-xl border border-slate-200 bg-white p-3 shadow-xl"><div className="flex items-center justify-between px-2 pb-2"><p className="font-bold text-[#0B1C4D]">Booking notifications</p><button type="button" className="text-xs underline" onClick={() => setNotificationsOpen(false)}>Close</button></div>{notifications.length === 0 ? <p className="px-2 py-3 text-sm text-slate-500">No booking activity.</p> : <div className="max-h-80 space-y-1 overflow-y-auto">{notifications.map(booking => <Link key={booking._id} href={`/dashboard/bookings/${booking._id}`} onClick={() => setNotificationsOpen(false)} className="block rounded-lg px-2 py-2 text-sm hover:bg-slate-50"><p className="font-semibold">{booking.vehiclePreference}</p><p className="text-xs text-slate-500">{booking.email} · {booking.status.replaceAll("_", " ")}</p><p className="text-xs text-slate-500">{booking.pickupDate} → {booking.returnDate}</p></Link>)}</div>}<Link href="/dashboard/bookings" onClick={() => setNotificationsOpen(false)} className="mt-2 block border-t px-2 pt-2 text-sm font-semibold text-orange-700 underline">View all bookings</Link></div>}
+          </div>
 
           <div className="hidden h-8 w-px bg-slate-200 sm:block" />
 

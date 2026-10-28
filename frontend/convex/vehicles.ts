@@ -37,8 +37,9 @@ export const publicList = query({
     for (const vehicle of vehicles) {
       if (!catalogueReady(vehicle)) continue;
       const rentals = await ctx.db.query("movaraBookingRequests").withIndex("by_vehicle", q => q.eq("vehicleId", vehicle._id)).collect();
-      // Without selected dates, the website shows only cars with no active reservation.
-      if (!args.pickupDate && rentals.some(rental => rental.status === "approved" || rental.status === "overdue")) continue;
+      // An approved rental removes the vehicle from every public catalogue feed
+      // until approval is cancelled or the vehicle is recorded as returned.
+      if (rentals.some(rental => rental.status === "approved" || rental.status === "overdue")) continue;
       if (args.pickupDate && args.returnDate) {
         const blocks = await ctx.db.query("movaraVehicleBlocks").withIndex("by_vehicle", q => q.eq("vehicleId", vehicle._id)).collect();
         if (!availableFor(vehicle, args.pickupDate, args.returnDate, blocks) || reservedConflict(rentals, args.pickupDate, args.returnDate)) continue;

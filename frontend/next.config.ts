@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
 
   images: {
-    qualities: [75, 90],
+    qualities: [75, 85, 90],
     remotePatterns: [{ protocol: "https", hostname: "res.cloudinary.com", pathname: "/**" }, ...(convexHostname ? [{ protocol: "https" as const, hostname: convexHostname, pathname: "/api/storage/**" }] : [])],
   },
 

@@ -88,6 +88,7 @@ export default function FeaturedCars() {
                     src={car.image}
                     alt={car.name}
                     fill
+                    loading="eager"
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                     className="object-cover transition-transform duration-300 group-hover:scale-105"
                   />
