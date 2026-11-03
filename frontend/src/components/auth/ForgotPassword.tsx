@@ -28,7 +28,7 @@ export default function ForgotPassword({ portal, onBack }: { portal: "customer" 
           const address = email.trim().toLowerCase();
           await signIn("password", { flow: "reset", email: address, portal });
           setSentTo(address);
-          setMessage("If this email has a Movara account, a reset code will arrive shortly. Check your spam folder too.");
+          setMessage("Code sent to your email.");
         } else {
           const result = await signIn("password", { flow: "reset-verification", email: sentTo, code: code.trim(), newPassword: password, portal });
           setPassword(""); setConfirmation(""); setCode("");

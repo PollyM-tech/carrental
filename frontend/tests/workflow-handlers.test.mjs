@@ -26,6 +26,8 @@ const care=await import(pathToFileURL(join(compiled,'customerCare.js')));
 const vehicles=await import(pathToFileURL(join(compiled,'vehicles.js')));
 const security=await import(pathToFileURL(join(compiled,'security.js')));
 const sessionGuard=await import(pathToFileURL(join(compiled,'lib/session_guard.js')));
+const gmail=await import(pathToFileURL(join(compiled,'gmail.js')));
+const {default:nodemailer}=await import('nodemailer');
 let id=0;
 const rows=new Map();
 const db={
@@ -46,6 +48,24 @@ const context=user=>({db,auth:{getUserIdentity:async()=>user?{subject:user+'|'+s
 const run=(module,fn,user,args={})=>module[fn]._handler(context(user),args);
 const today=new Date(Date.now()+10800000).toISOString().slice(0,10);
 const date=days=>new Date(Date.parse(today+'T00:00:00Z')+days*86400000).toISOString().slice(0,10);
+test('Gmail reset action fixes sender, requires TLS, rejects injected recipients and hides SMTP failures',async()=>{
+ const oldPassword=process.env.AUTH_GMAIL_APP_PASSWORD, original=nodemailer.createTransport;
+ let sent, closed=0;
+ try {
+  process.env.AUTH_GMAIL_APP_PASSWORD='abcd efgh ijkl mnop';
+  nodemailer.createTransport=options=>{
+   assert.equal(options.host,'smtp.gmail.com');assert.equal(options.secure,true);assert.equal(options.port,465);
+   assert.equal(options.auth.user,'movaracarhire@gmail.com');assert.equal(options.auth.pass,'abcdefghijklmnop');
+   return {sendMail:async message=>{sent=message;return {accepted:['customer@example.com'],rejected:[]}},close:()=>closed++};
+  };
+  await run(gmail,'sendPasswordReset',null,{email:'customer@example.com',code:'a'.repeat(32)});
+  assert.equal(sent.from,'Movara Car Hire <movaracarhire@gmail.com>');assert.ok(sent.text.includes('a'.repeat(32)));assert.equal(closed,1);
+  await assert.rejects(run(gmail,'sendPasswordReset',null,{email:'customer@example.com\r\nBcc: other@example.com',code:'a'.repeat(32)}),/Invalid/);
+  nodemailer.createTransport=()=>({sendMail:async()=>{throw Error('private SMTP server details')},close:()=>closed++});
+  await assert.rejects(run(gmail,'sendPasswordReset',null,{email:'customer@example.com',code:'a'.repeat(32)}),/^Error: Password reset email could not be delivered\.$/);
+  assert.equal(closed,2);
+ } finally {nodemailer.createTransport=original;if(oldPassword===undefined)delete process.env.AUTH_GMAIL_APP_PASSWORD;else process.env.AUTH_GMAIL_APP_PASSWORD=oldPassword;}
+});
 test('full in-person booking, approval and return flow enforces ownership and standing',async()=>{
  try {
  const owner=await db.insert('users',{email:'movaracarhire@gmail.com'}), customer=await db.insert('users',{email:'one@example.invalid'}), other=await db.insert('users',{email:'two@example.invalid'});

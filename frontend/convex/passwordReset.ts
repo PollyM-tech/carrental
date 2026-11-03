@@ -1,7 +1,11 @@
+import type { GenericActionCtx } from "convex/server";
+import type { DataModel } from "./_generated/dataModel";
+import { internal } from "./_generated/api.js";
+import { resetEmailProvider, resetEmailText } from "./lib/reset_email.ts";
 import { Email } from "@convex-dev/auth/providers/Email";
 
 export function passwordResetConfigured() {
-  return Boolean(process.env.AUTH_RESEND_KEY && process.env.AUTH_EMAIL_FROM);
+  return resetEmailProvider() !== null;
 }
 
 // Convex Auth stores, expires and consumes this code. Never log codes or API keys.
@@ -9,8 +13,13 @@ export const passwordReset = Email({
   id: "password-reset",
   maxAge: 15 * 60,
   generateVerificationToken: async () => crypto.randomUUID().replaceAll("-", ""),
-  async sendVerificationRequest({ identifier, token }) {
+  async sendVerificationRequest({ identifier, token }, ctx?: GenericActionCtx<DataModel>) {
     if (!passwordResetConfigured()) throw new Error("Password reset email is not configured.");
+    if (resetEmailProvider() === "gmail") {
+      if (!ctx) throw new Error("Password reset context unavailable.");
+      await ctx.runAction(internal.gmail.sendPasswordReset, { email: identifier, code: token });
+      return;
+    }
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${process.env.AUTH_RESEND_KEY}`, "Content-Type": "application/json" },
@@ -18,7 +27,7 @@ export const passwordReset = Email({
         from: process.env.AUTH_EMAIL_FROM,
         to: identifier,
         subject: "Reset your Movara password",
-        text: `Your Movara password reset code is:\n\n${token}\n\nIt expires in 15 minutes. Paste it into the password reset form. If you did not request this, ignore this email. Never share this code with anyone.`,
+        text: resetEmailText(token),
       }),
     });
     if (!response.ok) throw new Error("Password reset email could not be delivered.");

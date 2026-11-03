@@ -32,7 +32,7 @@ until a verified account-linking process is provided.
 
 ## Password reset email setup
 
-The prepared provider uses Resend. Set `AUTH_RESEND_KEY` and `AUTH_EMAIL_FROM` in
+The provider supports Gmail SMTP (preferred for the current Gmail sender), or Resend. Set `AUTH_RESEND_KEY` and `AUTH_EMAIL_FROM` in
 the Convex dashboard. The sender must be authorized by the email provider. Do not
 set a Gmail address as an unverified Resend sender. Without a verified sender,
 the provider's testing sender is suitable only for its permitted test recipients,
@@ -59,3 +59,27 @@ the development deployment; localhost is rejected unless explicitly configured.
 Do not add arbitrary preview domains or weaken this to accept any redirect.
 Deploy the frontend change to Vercel as well as syncing Convex. A full live Google
 round trip requires a real browser and customer Google consent.
+
+## Activate Gmail password-reset sending
+
+1. Sign into `movaracarhire@gmail.com` and enable Google 2-Step Verification.
+2. Open https://myaccount.google.com/apppasswords and create an App Password
+   named `Movara password reset`. This is a separate credential, not the Gmail
+   account password. Do not send it in chat, commit it, or put it in NEXT_PUBLIC
+   variables.
+3. In the Convex dashboard select the deployment used by the website. Under
+   Settings → Environment Variables add `AUTH_GMAIL_APP_PASSWORD`, with the
+   generated App Password as its value. Spaces are stripped by the sender.
+   No Gmail password, extra OAuth scope or domain purchase is needed.
+4. Gmail takes precedence when this variable exists. The sender is fixed to
+   `movaracarhire@gmail.com`; email can be sent only by the internal reset action.
+5. Test Forgot password with an existing email/password customer account. Confirm
+   delivery (also check spam), complete reset and verify the new password works
+   and old sessions are signed out. Test expired/incorrect/reused codes. Google-only
+   customers recover access with Google.
+
+Gmail sending is subject to Google's account sending limits and abuse controls.
+An account-password change may revoke App Passwords. Replace/revoke the App
+Password in Google and Convex if sending stops or the credential is exposed.
+Configuration presence makes recovery available but does not prove delivery;
+real receipt and reset need to be confirmed after adding the credential.

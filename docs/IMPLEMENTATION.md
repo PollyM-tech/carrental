@@ -124,3 +124,13 @@ PKCE checks remain enabled; do not mark live Google login verified. Added an
 OAuth-return failure notice instead of silently displaying the sign-in form.
 A fresh customer Google attempt after frontend deploy is needed to diagnose the
 remaining callback error; no real Google consent can be completed by local tests.
+
+Gmail SMTP password-reset sending is now implemented through an internal Node
+Convex action using TLS on smtp.gmail.com:465 and a fixed business sender. Set
+AUTH_GMAIL_APP_PASSWORD in the deployment environment after enabling 2-Step
+Verification and creating a Google App Password. Gmail takes precedence over the
+existing Resend option when configured. The action validates recipient/code,
+disables file/URL content access and SMTP debug logging, sets connection timeouts,
+and exposes generic errors. No credentials were entered or stored in source.
+Real delivery/reset completion remains unverified until the owner adds the
+credential. AUTH_SETUP.md includes the precise activation steps.
