@@ -13,6 +13,7 @@ import type * as auth from "../auth.js";
 import type * as bookingRequests from "../bookingRequests.js";
 import type * as customerCare from "../customerCare.js";
 import type * as http from "../http.js";
+import type * as lib_auth_redirect from "../lib/auth_redirect.js";
 import type * as lib_booking_input from "../lib/booking_input.js";
 import type * as lib_credentials from "../lib/credentials.js";
 import type * as lib_google_identity from "../lib/google_identity.js";
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   bookingRequests: typeof bookingRequests;
   customerCare: typeof customerCare;
   http: typeof http;
+  "lib/auth_redirect": typeof lib_auth_redirect;
   "lib/booking_input": typeof lib_booking_input;
   "lib/credentials": typeof lib_credentials;
   "lib/google_identity": typeof lib_google_identity;

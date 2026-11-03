@@ -29,6 +29,12 @@ export default function SignIn() {
   const [email, setEmail] = useState(""); const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false); const [message, setMessage] = useState("");
+  useEffect(() => {
+    if (isLoading || isAuthenticated || new URLSearchParams(window.location.search).get("googleReturn") !== "1") return;
+    let active = true;
+    queueMicrotask(() => { if (active) setMessage("Google sign-in did not complete. Please try again with a customer Google account, or use email and password. The Movara admin account uses the private admin sign-in page."); });
+    return () => { active = false; };
+  }, [isLoading, isAuthenticated]);
   const owner = email.trim().toLowerCase() === "movaracarhire@gmail.com";
   return <main className="mx-auto max-w-5xl space-y-5 px-4 py-10 sm:py-14"><Link href="/" className="font-bold text-orange-700">Movara Car Hire</Link><h1 className="text-3xl font-bold text-[#0B1C4D]">{signup ? "Create your Movara account" : "Sign in to Movara"}</h1><p className="max-w-2xl text-slate-600">Request a vehicle, view your booking requests and keep your contact details up to date.</p><div className="grid items-start gap-6 md:grid-cols-2"><section aria-label={signup ? "Account registration" : "Account sign in"} className="space-y-4 md:order-2"><Message message={message} />
     {isLoading ? <p>Checking your session…</p> : isAuthenticated ? <div className="space-y-4"><p>Opening your {account?.staff ? "admin dashboard" : "booking dashboard"}…</p><button disabled={busy} className="block underline" onClick={async () => { setBusy(true); try { await signOut(); } catch { setMessage("Could not sign out. Please retry."); } finally { setBusy(false); } }}>Sign out</button></div> : forgot ? <ForgotPassword portal="customer" onBack={() => setForgot(false)} /> : <form className="space-y-4 rounded-2xl border bg-white p-6" onSubmit={async event => {
@@ -50,7 +56,7 @@ export default function SignIn() {
         setBusy(true); setMessage("");
         try {
           const car = new URLSearchParams(window.location.search).get("car");
-          await signIn("google", { redirectTo: `/sign-in${car ? `?car=${encodeURIComponent(car)}` : ""}` });
+          await signIn("google", { redirectTo: `${window.location.origin}/sign-in?googleReturn=1${car ? `&car=${encodeURIComponent(car)}` : ""}` });
         } catch { setMessage("Unable to open Google sign-in. Please retry or use email and password."); }
         finally { setBusy(false); }
       }}>Continue with Google</button><p className="text-center text-xs text-slate-500">or use your email and password</p></>}

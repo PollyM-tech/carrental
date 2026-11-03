@@ -10,7 +10,7 @@
     "lint": "eslint",
     "convex:dev": "node --import ./scripts/node-network.mjs ./node_modules/convex/bin/main.js dev",
     "convex:auth:setup": "node scripts/configure-convex-auth.mjs",
-    "test:auth": "node --experimental-strip-types tests/convex-auth.test.mjs && node --experimental-strip-types tests/auth-routing.test.mjs && node --experimental-strip-types tests/customer-bookings.test.mjs && node tests/password-provider.test.mjs && node --experimental-strip-types tests/password-reset.test.mjs && node --experimental-strip-types tests/google-auth.test.mjs",
+    "test:auth": "node --experimental-strip-types tests/convex-auth.test.mjs && node --experimental-strip-types tests/auth-routing.test.mjs && node --experimental-strip-types tests/customer-bookings.test.mjs && node tests/password-provider.test.mjs && node --experimental-strip-types tests/password-reset.test.mjs && node --experimental-strip-types tests/google-auth.test.mjs && node --experimental-strip-types tests/auth-redirect.test.mjs",
     "convex:auth:check": "node --env-file=.env.local scripts/check-convex-auth.mjs",
     "convex:network:check": "node --env-file=.env.local scripts/check-convex-network.mjs",
     "test:vehicles": "node --experimental-strip-types tests/vehicles.test.mjs",

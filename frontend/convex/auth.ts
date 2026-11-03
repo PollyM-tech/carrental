@@ -1,3 +1,4 @@
+import { authRedirect } from "./lib/auth_redirect";
 import Google from "@auth/core/providers/google";
 import { googleProfile } from "./lib/google_identity";
 import { passwordReset, passwordResetConfigured } from "./passwordReset";
@@ -47,6 +48,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [password, Google({ profile: googleProfile })],
   signIn: { maxFailedAttempsPerHour: 60 },
   callbacks: {
+    async redirect({ redirectTo }) { return authRedirect(redirectTo, process.env.SITE_URL!, process.env.MOVARA_AUTH_LOCAL_ORIGIN); },
     async beforeSessionCreation(ctx, { userId }) { await prepareCredentialGuard(ctx as MutationCtx, userId); },
     async afterUserCreatedOrUpdated(ctx, { userId, type, provider }) {
       if (type !== "credentials" || provider.id !== "password") return;

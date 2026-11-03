@@ -47,3 +47,15 @@ and create a fresh guarded session. Google-only users recover access via Google.
 
 Live email delivery and complete Google OAuth round trips require configured
 credentials and must be tested before calling these options production-ready.
+
+## OAuth return origin
+
+OAuth must return to the same frontend origin where sign-in started so that the
+host-scoped verifier cookie is present. The customer button passes an absolute
+return URL. The backend allowlist accepts the www and bare Movara origins and
+`https://carrental-pi-ten.vercel.app`, only on known auth/dashboard routes.
+For local development, set `MOVARA_AUTH_LOCAL_ORIGIN=http://localhost:3000` on
+the development deployment; localhost is rejected unless explicitly configured.
+Do not add arbitrary preview domains or weaken this to accept any redirect.
+Deploy the frontend change to Vercel as well as syncing Convex. A full live Google
+round trip requires a real browser and customer Google consent.

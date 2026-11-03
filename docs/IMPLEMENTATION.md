@@ -107,3 +107,20 @@ recovery shows support availability. See AUTH_SETUP.md for callback and setup;
 real OAuth and email delivery remain unverified until configured. Also corrected
 the travel dynamic route params to Next 16's Promise shape after type checking
 identified the pre-existing production-build failure.
+
+Google OAuth return routing now preserves the starting frontend origin instead
+of resolving every relative redirect against SITE_URL. This prevents losing the
+host-scoped verifier when starting on Vercel and returning to the custom domain.
+An exact backend origin/path allowlist prevents arbitrary return destinations.
+Localhost requires explicit MOVARA_AUTH_LOCAL_ORIGIN configuration. Regression
+tests cover same-origin returns, car selection and hostile redirect rejection.
+Live Google consent/login still needs browser verification after frontend deploy.
+
+Subsequent user clarification: failure also occurs on the www origin, so the
+cross-origin correction is not a confirmed root-cause fix for that attempt.
+Redacted live Convex logs show an owner Google-login rejection and later Google
+callbacks failing issuer-response validation (`iss` missing). Issuer, token and
+PKCE checks remain enabled; do not mark live Google login verified. Added an
+OAuth-return failure notice instead of silently displaying the sign-in form.
+A fresh customer Google attempt after frontend deploy is needed to diagnose the
+remaining callback error; no real Google consent can be completed by local tests.
