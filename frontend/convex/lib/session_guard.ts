@@ -1,3 +1,4 @@
+import { GOOGLE_CREDENTIAL } from "./google_identity.ts";
 import { getAuthSessionId, getAuthUserId } from "@convex-dev/auth/server";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
@@ -11,8 +12,10 @@ export async function liveSession(ctx: QueryCtx | MutationCtx) {
     ctx.db.query("authAccounts").withIndex("userIdAndProvider", q => q.eq("userId", userId).eq("provider", "password")).unique(),
     ctx.db.query("movaraSessionActivity").withIndex("by_session", q => q.eq("sessionId", sessionId)).unique(),
   ]);
+  const google = !account?.secret ? await ctx.db.query("authAccounts").withIndex("userIdAndProvider", q => q.eq("userId", userId).eq("provider", "google")).unique() : null;
+  const currentCredential = account?.secret ?? (google ? GOOGLE_CREDENTIAL : undefined);
   const now = Date.now();
-  if (!sessionStillValid(session, userId, guard, account?.secret, activity?.lastActiveAt, now)) return null;
+  if (!sessionStillValid(session, userId, guard, currentCredential, activity?.lastActiveAt, now)) return null;
   const lastActiveAt = activity?.lastActiveAt ?? session!._creationTime;
   return { userId, sessionId, activity, lastActiveAt, warningAt: lastActiveAt + WARNING_AFTER_MS, expiresAt: idleDeadline(lastActiveAt), serverNow: now };
 }
@@ -29,10 +32,12 @@ export async function deleteUserSessions(ctx: MutationCtx, userId: Id<"users">) 
 // Called before Convex Auth creates a session. A changed password revokes all older sessions.
 export async function prepareCredentialGuard(ctx: MutationCtx, userId: Id<"users">) {
   const account = await ctx.db.query("authAccounts").withIndex("userIdAndProvider", q => q.eq("userId", userId).eq("provider", "password")).unique();
-  if (!account?.secret) throw new Error("Password account unavailable.");
+  const google = !account?.secret ? await ctx.db.query("authAccounts").withIndex("userIdAndProvider", q => q.eq("userId", userId).eq("provider", "google")).unique() : null;
+  const secretHash = account?.secret ?? (google ? GOOGLE_CREDENTIAL : undefined);
+  if (!secretHash) throw new Error("Sign-in account unavailable.");
   const guard = await ctx.db.query("movaraCredentialGuards").withIndex("by_user", q => q.eq("userId", userId)).unique();
-  if (guard?.secretHash === account.secret) return;
+  if (guard?.secretHash === secretHash) return;
   await deleteUserSessions(ctx, userId);
-  const data = { userId, secretHash: account.secret, changedAt: Date.now() };
+  const data = { userId, secretHash, changedAt: Date.now() };
   if (guard) await ctx.db.patch(guard._id, data); else await ctx.db.insert("movaraCredentialGuards", data);
 }

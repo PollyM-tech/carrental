@@ -1,4 +1,5 @@
 "use client";
+import ForgotPassword from "@/components/auth/ForgotPassword";
 import { isConnectionError } from "@/lib/connection-errors";
 import { useEffect, useState } from "react";
 import { useAuthActions } from "@convex-dev/auth/react";
@@ -16,19 +17,21 @@ export default function SignIn() {
   const { signIn, signOut } = useAuthActions();
   const { isAuthenticated, isLoading } = useConvexAuth();
   const router = useRouter();
+  const googleAvailable = useQuery(api.security.googleSignInAvailable);
   const account = useQuery(api.accounts.current, isAuthenticated ? {} : "skip");
   useEffect(() => {
     if (!account) return;
     const selectedCar = new URLSearchParams(window.location.search).get("car");
     router.replace(signedInHome(account) + (!account.staff && selectedCar ? `?car=${encodeURIComponent(selectedCar)}` : ""));
   }, [account, router]);
+  const [forgot, setForgot] = useState(false);
   const [signup, setSignup] = useState(false);
   const [email, setEmail] = useState(""); const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false); const [message, setMessage] = useState("");
   const owner = email.trim().toLowerCase() === "movaracarhire@gmail.com";
   return <main className="mx-auto max-w-5xl space-y-5 px-4 py-10 sm:py-14"><Link href="/" className="font-bold text-orange-700">Movara Car Hire</Link><h1 className="text-3xl font-bold text-[#0B1C4D]">{signup ? "Create your Movara account" : "Sign in to Movara"}</h1><p className="max-w-2xl text-slate-600">Request a vehicle, view your booking requests and keep your contact details up to date.</p><div className="grid items-start gap-6 md:grid-cols-2"><section aria-label={signup ? "Account registration" : "Account sign in"} className="space-y-4 md:order-2"><Message message={message} />
-    {isLoading ? <p>Checking your session…</p> : isAuthenticated ? <div className="space-y-4"><p>Opening your {account?.staff ? "admin dashboard" : "booking dashboard"}…</p><button disabled={busy} className="block underline" onClick={async () => { setBusy(true); try { await signOut(); } catch { setMessage("Could not sign out. Please retry."); } finally { setBusy(false); } }}>Sign out</button></div> : <form className="space-y-4 rounded-2xl border bg-white p-6" onSubmit={async event => {
+    {isLoading ? <p>Checking your session…</p> : isAuthenticated ? <div className="space-y-4"><p>Opening your {account?.staff ? "admin dashboard" : "booking dashboard"}…</p><button disabled={busy} className="block underline" onClick={async () => { setBusy(true); try { await signOut(); } catch { setMessage("Could not sign out. Please retry."); } finally { setBusy(false); } }}>Sign out</button></div> : forgot ? <ForgotPassword portal="customer" onBack={() => setForgot(false)} /> : <form className="space-y-4 rounded-2xl border bg-white p-6" onSubmit={async event => {
       event.preventDefault(); setBusy(true); setMessage("");
       if (owner) { setMessage("Use the private admin sign-in page for this account."); setBusy(false); return; }
       let internationalPhone: string | undefined;
@@ -42,10 +45,20 @@ export default function SignIn() {
       } catch (error) { setMessage(isConnectionError(error) ? "Unable to reach Movara. Check your connection and try again." : error instanceof Error && error.message.includes("LOGIN_LOCKED") ? "Five failed login attempts. Wait 15 minutes before trying again." : signup ? (owner ? "Account creation failed. Use the private admin sign-in page. If already registered, sign in." : "Account creation failed. Check your details. If already registered, sign in.") : "Sign-in failed. Check your email and password, then try again."); }
       finally { setBusy(false); }
     }}>
+      {googleAvailable && <><button type="button" disabled={busy} className="w-full rounded-xl border border-slate-300 px-4 py-3 font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50" onClick={async () => {
+        if (busy) return;
+        setBusy(true); setMessage("");
+        try {
+          const car = new URLSearchParams(window.location.search).get("car");
+          await signIn("google", { redirectTo: `/sign-in${car ? `?car=${encodeURIComponent(car)}` : ""}` });
+        } catch { setMessage("Unable to open Google sign-in. Please retry or use email and password."); }
+        finally { setBusy(false); }
+      }}>Continue with Google</button><p className="text-center text-xs text-slate-500">or use your email and password</p></>}
       <Field required label="Email" type="email" value={email} onChange={setEmail} />
       <Field required label={signup ? "Password (12–128 characters)" : "Password"} type="password" value={password} onChange={setPassword} />
       {signup && <><Field label="Phone / WhatsApp number with country code" type="tel" required={!owner} value={phone} onChange={setPhone} /><p className="text-xs text-slate-600">International numbers welcome: +44 7700 900123, +1 202 555 0123, or +254 716 741039. Kenyan 07… and 01… numbers also work.</p></>}
       <button disabled={busy || signup && (password.length < 12 || password.length > 128)} className={buttonStyle}>{busy ? "Please wait…" : signup ? "Create account" : "Sign in"}</button>
+      {!signup && <button type="button" disabled={busy} className="block text-sm underline" onClick={() => { setForgot(true); setMessage(""); setPassword(""); }}>Forgot password?</button>}
       <button type="button" disabled={busy} className="block text-sm underline" onClick={() => { setSignup(!signup); setMessage(""); setPassword(""); }}>{signup ? "Already registered? Sign in" : "New here? Create an account"}</button>
     </form>}
     <p className="text-sm text-slate-600">Customers continue to their booking dashboard after signing in.</p></section>

@@ -1,3 +1,4 @@
+import { passwordResetConfigured } from "./passwordReset";
 import { v } from "convex/values";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { liveSession, prepareCredentialGuard } from "./lib/session_guard";
@@ -39,3 +40,8 @@ export const resetOwnerPassword = internalMutation({ args: { hashedSecret: v.str
   await ctx.db.patch(account._id, { secret: hashedSecret });
   await prepareCredentialGuard(ctx, account.userId);
 }});
+
+export const passwordResetAvailable = query({ args: {}, handler: async () => passwordResetConfigured() });
+
+export const completePasswordReset = internalMutation({ args: { userId: v.id("users") }, handler: async (ctx, { userId }) => { await prepareCredentialGuard(ctx, userId); } });
+export const googleSignInAvailable = query({ args: {}, handler: async () => Boolean(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) });

@@ -10,7 +10,12 @@ export const mine = query({
   args: {},
   handler: async ctx => {
     const user = await requireUser(ctx);
-    return await ctx.db.query("movaraBookingRequests").withIndex("by_customer", q => q.eq("customerId", user._id)).order("desc").take(100);
+    const rows = await ctx.db.query("movaraBookingRequests").withIndex("by_customer", q => q.eq("customerId", user._id)).order("desc").take(100);
+    return await Promise.all(rows.map(async row => {
+      const vehicle = row.vehicleId ? await ctx.db.get(row.vehicleId) : null;
+      const photo = vehicle?.photoId ? await ctx.db.get(vehicle.photoId) : null;
+      return { ...row, displayImageUrl: photo ? await ctx.storage.getUrl(photo.storageId) : null };
+    }));
   },
 });
 export const create = mutation({

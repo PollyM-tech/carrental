@@ -85,3 +85,25 @@ verified, and previous/verification sessions were revoked. No password or token 
 stored in these notes. Earlier network-blocked sync/reset status is superseded;
 the broader live workflow checks and any historical synthetic-account cleanup
 remain separate, unverified items.
+
+Customer dashboard now leads with active bookings, progress and next steps, followed
+by the pickup checklist, another-request form, rental terms, past bookings and
+contact details. Booking cards include owner-scoped vehicle photos and rental
+estimates. Readiness for handover remains awaiting confirmation: the current
+Convex model does not record payment clearance/release or an agreed final quote.
+Pending customers can cancel after confirmation or open a WhatsApp change request
+with their booking reference; approved changes go through Movara. Floating
+WhatsApp and call links use the configured business contact. No document-upload
+or payment collection was enabled by this UI change.
+
+Optional customer Google OAuth and forgot-password forms are implemented. Google
+requires a verified email and rejects the designated owner email; owner access
+remains on the private password page. Google-only accounts use the existing idle
+session guard, and adding/changing a password invalidates prior sessions. Reset
+codes expire after 15 minutes with separate request/code attempt limits. Email
+sending is prepared through Resend but configuration is absent. Google client
+credentials are also absent, so the Google button is gated off and password
+recovery shows support availability. See AUTH_SETUP.md for callback and setup;
+real OAuth and email delivery remain unverified until configured. Also corrected
+the travel dynamic route params to Next 16's Promise shape after type checking
+identified the pre-existing production-build failure.

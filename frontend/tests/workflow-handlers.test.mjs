@@ -54,6 +54,17 @@ test('full in-person booking, approval and return flow enforces ownership and st
  await db.insert('movaraCredentialGuards', { userId: who, secretHash: 'test-hash', changedAt: Date.now()-1000 });
  sessionIds.set(who, await db.insert('authSessions', { userId: who, expirationTime: Date.now()+86400000 }));
  }
+ const googleCustomer=await db.insert('users',{email:'google@example.invalid',emailVerificationTime:Date.now()});
+ await db.insert('authAccounts',{userId:googleCustomer,provider:'google',providerAccountId:'google-test-sub'});
+ await sessionGuard.prepareCredentialGuard(context(googleCustomer),googleCustomer);
+ sessionIds.set(googleCustomer,await db.insert('authSessions',{userId:googleCustomer,expirationTime:Date.now()+86400000}));
+ assert.ok(await sessionGuard.liveSession(context(googleCustomer)));
+ await db.insert('authAccounts',{userId:googleCustomer,provider:'password',providerAccountId:'google@example.invalid',secret:'new-test-hash'});
+ assert.equal(await sessionGuard.liveSession(context(googleCustomer)),null);
+ await run(security,'completePasswordReset',null,{userId:googleCustomer});
+ assert.equal(await db.get(sessionIds.get(googleCustomer)),null);
+ sessionIds.set(googleCustomer,await db.insert('authSessions',{userId:googleCustomer,expirationTime:Date.now()+86400000}));
+ assert.ok(await sessionGuard.liveSession(context(googleCustomer)));
  await db.insert('staffMemberships',{userId:owner,roles:['owner'],active:true});
  await db.insert('staffMemberships',{userId:other,roles:['owner'],active:true});
  const car=await db.insert('movaraVehicles',{name:'Test',category:'SUV',registration:'TEST123',archived:false,published:true,status:'available',insuranceExpiresOn:date(365),inspectionExpiresOn:date(365),pricePerDay:3500,seats:5,transmission:'Automatic',fuel:'Petrol',brand:'Test',model:'Test',location:'Nairobi',description:'',isFeatured:true});
@@ -77,6 +88,11 @@ test('full in-person booking, approval and return flow enforces ownership and st
  await run(care,'review',owner,await approval(first));
  await run(bookings,'approve',owner,{id:first});
  assert.equal((await run(vehicles,'publicList',null,{})).length,0); // Approval removes it from Featured/all-cars feeds.
+ const customerBookings=await run(bookings,'mine',customer,{});
+ assert.ok(customerBookings.some(row=>row._id===first));
+ assert.ok(customerBookings.every(row=>row.customerId===customer));
+ assert.equal(customerBookings.find(row=>row._id===first).displayImageUrl,null);
+ assert.ok(!(await run(bookings,'mine',other,{})).some(row=>row._id===first));
  const firstVersion=(await db.get(first)).approvalVersion;
  await run(bookings,'approve',owner,{id:first});
  assert.equal((await db.get(first)).approvalVersion,firstVersion);

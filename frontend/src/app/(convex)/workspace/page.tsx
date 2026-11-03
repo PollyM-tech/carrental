@@ -8,11 +8,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "../../../../convex/_generated/api";
 import { normalisePhone } from "../../../../convex/lib/identity";
 import { bookingDates } from "../../../../convex/lib/booking_input";
-import InPersonVerification from "@/components/auth/InPersonVerification";
+import BookingCard from "@/components/customer/BookingCard";
+import WhatsAppButton from "@/components/shared/WhatsAppButton";
 import { rentalTerms } from "@/config/rental-policy";
 import { Field, Message, buttonStyle } from "@/components/shared/FormFields";
 
-const statusLabels = { requested: "Request received", in_review: "Being reviewed", cancelled: "Cancelled", approved: "Approved — complete handover before payment/release", overdue: "Return outstanding — contact Movara", returned: "Returned" };
 export default function CustomerBookings() { return <Suspense fallback={<main className="p-10">Opening booking dashboard…</main>}><BookingWorkspace /></Suspense>; }
 function BookingWorkspace() {
   const searchParams = useSearchParams();
@@ -37,19 +37,12 @@ function BookingWorkspace() {
   async function run(action: () => Promise<void>) { setBusy(true); setMessage(""); try { await action(); } catch(e) { setMessage(e instanceof Error ? e.message : "Please retry."); } finally { setBusy(false); } }
   if (account === undefined) return <main className="p-10 text-center">Opening your booking dashboard…</main>;
   if (!account) return <main className="p-10"><Link href="/sign-in" className="underline">Sign in to view your bookings</Link></main>;
-  return <main className="mx-auto max-w-5xl space-y-6 px-4 py-10">
+  return <main className="mx-auto max-w-5xl space-y-8 px-4 pt-8 pb-28">
     <div className="flex flex-wrap items-center justify-between gap-4"><div><Link href="/" className="inline-flex items-center gap-2 font-semibold text-orange-700 underline underline-offset-4"><span aria-hidden="true">←</span> Back to website</Link><h1 className="mt-2 text-3xl font-bold text-[#0B1C4D]">Your booking dashboard</h1><p className="mt-2 break-all text-sm text-slate-600">{account.email}</p></div><button disabled={actionBusy} className="underline" onClick={() => void run(async () => { await signOut(); router.replace("/sign-in"); })}>Sign out</button></div>
     <Message message={message} />
-    <section className="space-y-4 rounded-2xl border bg-white p-6"><h2 className="text-xl font-bold">Your contact number</h2><Field type="tel" label="Phone / WhatsApp number with country code" value={phone} onChange={setPhone} /><p className="text-sm text-slate-600">Use + and your country code, for example +44 7700 900123 or +1 202 555 0123. Kenyan 07… and 01… numbers are also accepted. Saving a number does not verify ownership.</p><button disabled={actionBusy || phoneUnchanged || !phone.trim()} className={buttonStyle} onClick={() => {
-      if (actionBusy || phoneUnchanged || contactSavePending.current) return;
-      contactSavePending.current = true;
-      const submittedPhone = phone;
-      void run(async () => {
-        try { const result = await savePhone({ phone: normalisePhone(submittedPhone) }); setPhone(current => current === null || current === submittedPhone ? result.phone : current); setMessage("Contact number saved."); }
-        finally { contactSavePending.current = false; }
-      });
-    }}>{phoneUnchanged ? "Saved" : "Save contact number"}</button></section>
-    <form className="space-y-4 rounded-2xl border bg-white p-6" onSubmit={async event => {
+    <section className="space-y-4" aria-labelledby="active-bookings"><div className="flex flex-wrap items-center justify-between gap-3"><h2 id="active-bookings" className="text-2xl font-bold text-[#0B1C4D]">Your active bookings</h2><a href="#request-booking" className="font-semibold text-orange-700 underline">Request another vehicle</a></div>{rows === undefined ? <p>Loading your bookings…</p> : rows.filter(row => !["returned", "cancelled"].includes(row.status)).length === 0 ? <div className="rounded-2xl border bg-white p-6"><p>You have no active bookings. Choose a vehicle and dates below to get started.</p></div> : rows.filter(row => !["returned", "cancelled"].includes(row.status)).map(row => <BookingCard key={row._id} booking={row} busy={actionBusy} onCancel={() => { if (actionBusy || !window.confirm("Cancel this booking request?")) return; void run(async () => { await cancel({ id: row._id }); setMessage("Booking request cancelled."); }); }} />)}</section>
+    <section className="space-y-3 rounded-2xl border border-orange-100 bg-orange-50/50 p-6"><h2 className="text-xl font-bold text-[#0B1C4D]">Prepare for pickup</h2><ul className="list-disc space-y-2 pl-5 text-sm text-slate-700"><li>Bring your original ID or passport and driving licence for in-person checks.</li><li>Have your guarantor’s and next-of-kin’s names and contact numbers ready, with their permission.</li><li>Self-drive drivers must be at least 22 and have held a licence for at least two years.</li><li>Review and sign the paper rental contract with Movara at handover.</li><li>Pay only after clearance. Movara must verify payment before releasing the vehicle.</li></ul><p className="text-sm">Need help arranging pickup? <a href="tel:+254716741039" className="font-semibold underline">Call 0716 741 039</a>.</p></section>
+    <form id="request-booking" className="scroll-mt-6 space-y-4 rounded-2xl border bg-white p-6" onSubmit={async event => {
       event.preventDefault();
       if (bookingSubmitPending.current) return;
       bookingSubmitPending.current = true; setBookingSubmitting(true); setMessage("");
@@ -72,7 +65,17 @@ function BookingWorkspace() {
       <p className="text-sm text-slate-600">Self-drive drivers must be 22+ and have held a licence for at least two years. Document checks, guarantor/next-of-kin details and a manually signed contract are required before handover. Cross-border travel is unavailable.</p><p className="text-xs text-slate-500">Do not enter ID/licence numbers or payment codes in these fields. No payment is requested at this stage.</p><button type="submit" disabled={bookingSubmitting} aria-busy={bookingSubmitting} className={buttonStyle}>{bookingSubmitting ? "Submitting…" : "Submit booking request"}</button></fieldset>
     </form>
     <section className="space-y-3 rounded-2xl border bg-white p-6"><h2 className="text-xl font-bold">Before you confirm a rental</h2><p className="text-sm text-slate-600">{rentalTerms.payment}</p><p className="text-sm text-slate-600">{rentalTerms.deposit}</p><p className="text-sm text-slate-600">{rentalTerms.contract}</p><p className="text-sm text-slate-600">{rentalTerms.failedHandover}</p><p className="text-sm text-slate-600">{rentalTerms.noShow}</p></section>
-    <section className="space-y-4 rounded-2xl border bg-white p-6"><h2 className="text-xl font-bold">Your booking requests</h2>{rows === undefined ? <p>Loading your requests…</p> : rows.length === 0 ? <p>No booking requests yet. Submit your preferred vehicle and dates above.</p> : rows.map(row => <article key={row._id} className="space-y-2 rounded-xl border p-4"><div className="flex flex-wrap justify-between gap-2"><h3 className="font-bold">{row.vehiclePreference}</h3><span className="text-sm font-semibold text-orange-700">{statusLabels[row.status]}</span></div><p className="text-sm">{row.pickupDate} → {row.returnDate} · {row.rentalDays} days</p><p className="text-sm">Pickup: {row.pickupLocation}</p>{row.estimatedRentalKes !== undefined && <p className="text-sm">Rental estimate: KES {row.estimatedRentalKes.toLocaleString()} · KES {row.dailyRateKes?.toLocaleString()} / day. Subject to confirmed terms.</p>}<p className="text-sm">Contact: {row.phone}</p><p className="font-mono text-xs text-slate-500">Reference: {row._id}</p>{["requested", "in_review"].includes(row.status) && <button disabled={actionBusy} className="text-sm font-semibold underline" onClick={() => void run(async () => { await cancel({ id: row._id }); setMessage("Booking request cancelled."); })}>Cancel this request</button>}<InPersonVerification bookingId={row._id} editable={["requested", "in_review"].includes(row.status)} /></article>)}</section>
+    <section className="space-y-4"><h2 className="text-2xl font-bold text-[#0B1C4D]">Past bookings</h2>{rows === undefined ? <p>Loading…</p> : rows.filter(row => ["returned", "cancelled"].includes(row.status)).length === 0 ? <p className="text-sm text-slate-600">Your returned and cancelled bookings will appear here.</p> : rows.filter(row => ["returned", "cancelled"].includes(row.status)).map(row => <BookingCard key={row._id} booking={row} busy={actionBusy} onCancel={() => {}} />)}</section>
+    <section className="space-y-4 rounded-2xl border bg-white p-6"><h2 className="text-xl font-bold">Your contact number</h2><Field type="tel" label="Phone / WhatsApp number with country code" value={phone} onChange={setPhone} /><p className="text-sm text-slate-600">Use + and your country code, for example +44 7700 900123 or +1 202 555 0123. Kenyan 07… and 01… numbers are also accepted. Saving a number does not verify ownership.</p><button disabled={actionBusy || phoneUnchanged || !phone.trim()} className={buttonStyle} onClick={() => {
+      if (actionBusy || phoneUnchanged || contactSavePending.current) return;
+      contactSavePending.current = true;
+      const submittedPhone = phone;
+      void run(async () => {
+        try { const result = await savePhone({ phone: normalisePhone(submittedPhone) }); setPhone(current => current === null || current === submittedPhone ? result.phone : current); setMessage("Contact number saved."); }
+        finally { contactSavePending.current = false; }
+      });
+    }}>{phoneUnchanged ? "Saved" : "Save contact number"}</button></section>
     <p className="text-sm text-slate-600">Need assistance? <Link href="/contact" className="font-semibold text-orange-700 underline">Contact Movara</Link> or WhatsApp/call <a href="tel:+254716741039" className="underline">0716 741 039</a>.</p>
+    <WhatsAppButton />
   </main>;
 }
