@@ -1,6 +1,7 @@
 
 "use client";
 
+import ContactsDropdown from "./ContactsDropdown";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -10,7 +11,6 @@ import {
 import {
   Menu,
   X,
-  Phone,
   MessageCircle,
 } from "lucide-react";
 
@@ -24,7 +24,6 @@ const navLinks = [
   { label: "Contact", href: "/contact" },
 ];
 
-const phoneNumber = "0716741039";
 const whatsappNumber = "254716741039";
 
 const whatsappLink =
@@ -147,26 +146,7 @@ export default function Navbar() {
 
         {/* Desktop contact actions */}
         <div className="hidden shrink-0 items-center gap-2.5 xl:flex">
-          <a
-            href={`tel:${phoneNumber}`}
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-3.5 py-2 text-[13px] font-medium text-[#B84300] transition-colors hover:bg-orange-100"
-          >
-            <Phone
-              size={16}
-              aria-hidden="true"
-            />
-            0716 741 039
-          </a>
-<a
-            href="tel:+254706040984"
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-3.5 py-2 text-[13px] font-medium text-[#B84300] transition-colors hover:bg-orange-100"
-          >
-            <Phone
-              size={16}
-              aria-hidden="true"
-            />
-            0706 040 984
-          </a>
+          <ContactsDropdown />
 
           <a
             href={whatsappLink}
@@ -229,29 +209,8 @@ export default function Navbar() {
           </div>
 
           {/* Contact buttons */}
-          <div className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-100 pt-4">
-            <a
-              href={`tel:${phoneNumber}`}
-              onClick={closeMenu}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-3 py-2.5 text-sm font-medium text-[#B84300]"
-            >
-              <Phone
-                size={16}
-                aria-hidden="true"
-              />
-              0716 741 039
-            </a>
-<a
-              href="tel:+254706040984"
-              onClick={closeMenu}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-3 py-2.5 text-sm font-medium text-[#B84300]"
-            >
-              <Phone
-                size={16}
-                aria-hidden="true"
-              />
-              0706 040 984
-            </a>
+          <div className="mt-4 grid grid-cols-2 items-start gap-3 border-t border-slate-100 pt-4">
+            <ContactsDropdown mobile onNavigate={closeMenu} />
 
             <a
               href={whatsappLink}

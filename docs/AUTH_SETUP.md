@@ -83,3 +83,11 @@ An account-password change may revoke App Passwords. Replace/revoke the App
 Password in Google and Convex if sending stops or the credential is exposed.
 Configuration presence makes recovery available but does not prove delivery;
 real receipt and reset need to be confirmed after adding the credential.
+
+## Production deployment
+
+Production Cloud URL: `https://flexible-mammoth-262.eu-west-1.convex.cloud`.
+Production OAuth callback:
+`https://flexible-mammoth-262.eu-west-1.convex.site/api/auth/callback/google`.
+See VERCEL_PRODUCTION.md for frontend variables and cutover checks. The earlier
+`gregarious-rooster-215` URL is the development deployment, not production.
