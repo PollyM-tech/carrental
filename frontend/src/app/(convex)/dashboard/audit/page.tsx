@@ -1,2 +1,3 @@
 import { redirect } from "next/navigation";
-export default function RemovedModule() { redirect("/dashboard"); }
+
+export default function LegacyPage() { redirect("/dashboard"); }

@@ -3,16 +3,17 @@
 
 import {
   Suspense,
+  useRef,
   useState,
   type FormEvent,
 } from "react";
+import { normalisePhone } from "../../../../convex/lib/identity";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
   ArrowRight,
   CalendarDays,
-  CarFront,
   CheckCircle2,
   MapPin,
   MessageCircle,
@@ -75,6 +76,11 @@ function ContactFormContent({
   );
 
   const [error, setError] = useState("");
+  const [sending, setSending] = useState(false);
+  const [website, setWebsite] = useState("");
+  const pending = useRef(false);
+  const requestKey = useRef<string | null>(null);
+  const [savedEnquiry, setSavedEnquiry] = useState<{ reference: string; whatsappUrl: string } | null>(null);
 
   const finalReturnLocation = form.sameLocation
     ? form.pickupLocation
@@ -84,15 +90,19 @@ function ContactFormContent({
     field: keyof ContactForm,
     value: string | boolean
   ) {
+    if (sending) return;
     setForm((current) => ({
       ...current,
       [field]: value,
     }));
 
     setError("");
+    if (savedEnquiry) { setSavedEnquiry(null); requestKey.current = null; }
   }
 
   function changeInquiryType(type: InquiryType) {
+    if (sending) return;
+    setSavedEnquiry(null); requestKey.current = null;
     setInquiryType(type);
     setStep("details");
     setError("");
@@ -106,6 +116,8 @@ function ContactFormContent({
       setError("Please enter your full name and phone number.");
       return;
     }
+
+    try { normalisePhone(form.phone); } catch { setError("Enter your phone with country code, or a Kenyan 07… / 01… number."); return; }
 
     if (inquiryType === "general") {
       if (!form.message.trim()) {
@@ -139,48 +151,19 @@ function ContactFormContent({
     setStep("review");
   }
 
-  function continueToWhatsApp() {
-    const lines = [
-      "Hello Movara Car Hire,",
-      "",
-      inquiryType === "booking"
-        ? "I would like to inquire about a self-drive car rental."
-        : "I would like to make a general inquiry.",
-      "",
-      `Name: ${form.name.trim()}`,
-      `Phone: ${form.phone.trim()}`,
-    ];
-
-    if (form.email.trim()) {
-      lines.push(`Email: ${form.email.trim()}`);
-    }
-
-    if (inquiryType === "booking") {
-      lines.push(
-        "",
-        "RENTAL DETAILS",
-        `Preferred Car: ${form.vehicle.trim() || "Open to suggestions"}`,
-        `Pickup: ${formatDateTime(form.pickupDate)}`,
-        `Return: ${formatDateTime(form.returnDate)}`,
-        `Pickup Location: ${form.pickupLocation.trim()}`,
-        `Return Location: ${finalReturnLocation.trim()}`
-      );
-    }
-
-    if (form.message.trim()) {
-      lines.push("", `Message: ${form.message.trim()}`);
-    }
-
-    lines.push(
-      "",
-      "Please confirm availability and the applicable rental terms."
-    );
-
-    const url =
-      `https://wa.me/${WHATSAPP_NUMBER}?text=` +
-      encodeURIComponent(lines.join("\n"));
-
-    window.location.assign(url);
+  async function continueToWhatsApp() {
+    if (pending.current) return;
+    pending.current = true; setSending(true); setError("");
+    try {
+      requestKey.current ??= crypto.randomUUID();
+      const response = await fetch("/api/enquiries", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ requestKey: requestKey.current, kind: inquiryType, ...form, website, returnLocation: finalReturnLocation }) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Unable to save your enquiry. Please retry.");
+      const saved = { reference: String(result.reference), whatsappUrl: String(result.whatsappUrl) };
+      setSavedEnquiry(saved);
+      try { window.location.assign(saved.whatsappUrl); } catch { /* Keep the saved reference and retry link visible. */ }
+    } catch (error) { setError(error instanceof Error ? error.message : "Unable to save. Please retry."); }
+    finally { pending.current = false; setSending(false); }
   }
 
   return (
@@ -328,10 +311,11 @@ function ContactFormContent({
 
             <p className="mt-2 text-[13px] leading-6 text-slate-600">
               {step === "review"
-                ? "Check your information before opening WhatsApp."
-                : "Complete the details below to prepare your WhatsApp inquiry."}
+                ? "Check your information before saving and opening WhatsApp."
+                : "Complete your details. We save your enquiry before opening WhatsApp."}
             </p>
 
+            {error && <p role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>}
             {step === "details" ? (
               <>
                 {/* Inquiry type */}
@@ -375,6 +359,7 @@ function ContactFormContent({
                   onSubmit={handleReview}
                   className="mt-6"
                 >
+                  <label className="hidden" aria-hidden="true">Leave empty<input type="text" name="website" autoComplete="off" tabIndex={-1} value={website} onChange={event => setWebsite(event.target.value)} /></label>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Field
                       label="Full Name *"
@@ -536,14 +521,7 @@ function ContactFormContent({
                     />
                   </label>
 
-                  {error && (
-                    <p
-                      role="alert"
-                      className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700"
-                    >
-                      {error}
-                    </p>
-                  )}
+
 
                   <button
                     type="submit"
@@ -634,6 +612,7 @@ function ContactFormContent({
                 <div className="mt-5 flex flex-wrap gap-3">
                   <button
                     type="button"
+                    disabled={sending}
                     onClick={() => setStep("details")}
                     className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 px-4 py-2.5 text-[13px] font-medium text-[#0B1C4D]"
                   >
@@ -641,22 +620,23 @@ function ContactFormContent({
                     Edit Details
                   </button>
 
+                  {savedEnquiry && <div role="status" className="mb-3 rounded-xl border border-green-200 bg-green-50 p-3 text-sm"><p>Your enquiry is saved. Reference: <span className="break-all font-mono">{savedEnquiry.reference}</span></p><a href={savedEnquiry.whatsappUrl} target="_blank" rel="noopener noreferrer" className="font-semibold text-green-800 underline">Open WhatsApp and tap Send</a></div>}
                   <button
                     type="button"
-                    onClick={continueToWhatsApp}
+                    disabled={sending}
+                    onClick={() => { if (savedEnquiry) window.location.assign(savedEnquiry.whatsappUrl); else void continueToWhatsApp(); }}
                     className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[#FF7A00] px-4 py-2.5 text-[13px] font-medium text-white hover:bg-[#E86D00]"
                   >
                     <Send size={16} />
-                    Continue on WhatsApp
+                    {sending ? "Saving…" : savedEnquiry ? "Open WhatsApp" : "Save & continue on WhatsApp"}
                     <ArrowRight size={16} />
                   </button>
                 </div>
 
                 <p className="mt-4 text-xs leading-5 text-slate-500">
-                  WhatsApp will open with your prepared
+                  Your details are saved first. WhatsApp will open with your prepared
                   message. Review and send it to Movara.
-                  Your inquiry is not submitted or confirmed
-                  until you send the message.
+                  Tap Send to notify us on WhatsApp. Your details are already in our system; a rental is confirmed only after Movara’s approval.
                 </p>
               </div>
             )}

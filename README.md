@@ -1,3 +1,9 @@
+> Current runtime: Next.js in `frontend/` with Convex authentication, booking,
+> vehicle, handover and privacy-request functions. Production cutover and browser
+> testing instructions are in [docs/PRODUCTION_TESTING.md](docs/PRODUCTION_TESTING.md).
+> The older Django workflow described below remains reference code; its payment
+> and document services are not required by the current customer booking flow.
+
 # Movara Car Hire
 
 Convex migration has started: Convex Auth is deployed to the linked development project, with new `/sign-in` and `/workspace` routes. Customer booking requests and the admin request queue now use Convex; catalogue, KYC, payments and remaining operational tools still need migration. See [Convex migration setup](frontend/convex/README.md) for private owner onboarding and remaining work.

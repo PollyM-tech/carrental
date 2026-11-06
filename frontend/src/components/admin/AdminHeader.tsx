@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useAuthActions } from "@convex-dev/auth/react";
 import { useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { api } from "../../../convex/_generated/api";
@@ -31,10 +32,18 @@ export default function AdminHeader({
   signingOut = false,
 }: AdminHeaderProps) {
   const router = useRouter();
+  const { signOut } = useAuthActions();
   const [search, setSearch] = useState("");
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notificationsReadAt, setNotificationsReadAt] = useState(0);
-  useEffect(() => { const saved = window.localStorage.getItem("movara_admin_notifications_read_at"); if (saved) setNotificationsReadAt(Number(saved)); }, []);
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      try { const value = Number(window.localStorage.getItem("movara_admin_notifications_read_at")); if (Number.isFinite(value)) setNotificationsReadAt(value); } catch { /* Notifications still work when browser storage is unavailable. */ }
+    });
+    return () => { active = false; };
+  }, []);
   const vehicles = useQuery(api.vehicles.list);
   const bookings = useQuery(api.bookingRequests.staffList);
   const query = search.trim().toLowerCase();
@@ -44,11 +53,11 @@ export default function AdminHeader({
   const unreadNotifications = notificationRows.filter(booking => booking.updatedAt > notificationsReadAt);
   const notifications = (notificationsOpen ? notificationRows : unreadNotifications).slice(0, 8);
 
-  function handleLogout() {
+  async function handleLogout() {
     if (onSignOut) { onSignOut(); return; }
-    localStorage.removeItem("movara_admin_token");
+    await signOut();
 
-    router.replace("/admin-login");
+    router.replace("/movara-access");
     router.refresh();
   }
 
@@ -106,7 +115,7 @@ export default function AdminHeader({
           </Link>
 
           <div className="relative">
-            <button type="button" onClick={() => { const next = !notificationsOpen; setNotificationsOpen(next); if (next && notifications.length > 0) { const now = Date.now(); setNotificationsReadAt(now); window.localStorage.setItem("movara_admin_notifications_read_at", String(now)); } }} aria-label="Open booking notifications" title="Booking notifications" className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-orange-200 hover:text-orange-700">
+            <button type="button" onClick={() => { const next = !notificationsOpen; setNotificationsOpen(next); if (next && notifications.length > 0) { const now = Date.now(); setNotificationsReadAt(now); try { window.localStorage.setItem("movara_admin_notifications_read_at", String(now)); } catch { /* Notifications remain usable without storage. */ } } }} aria-label="Open booking notifications" title="Booking notifications" className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-orange-200 hover:text-orange-700">
               <Bell size={19} aria-hidden="true" />
               {unreadNotifications.length > 0 && <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-orange-600 px-1 text-center text-[10px] font-bold text-white">{unreadNotifications.length}</span>}
             </button>

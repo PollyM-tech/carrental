@@ -21,6 +21,9 @@ function compile(dir, rel='') {
  }
 }
 compile(join(root,'convex'));
+const enquiries=await import(pathToFileURL(join(compiled,'enquiries.js')));
+const handovers=await import(pathToFileURL(join(compiled,'handovers.js')));
+const privacy=await import(pathToFileURL(join(compiled,'dataRequests.js')));
 const bookings=await import(pathToFileURL(join(compiled,'bookingRequests.js')));
 const care=await import(pathToFileURL(join(compiled,'customerCare.js')));
 const vehicles=await import(pathToFileURL(join(compiled,'vehicles.js')));
@@ -37,7 +40,7 @@ const db={
  async delete(key){rows.delete(key)},
  query(table){
   const constraints=[];let descending=false;
-  const builder={withIndex(_index,fn){if(fn){const q={eq(field,value){constraints.push(row=>row[field]===value);return q}};fn(q)}return builder},order(order){descending=order==='desc';return builder},
+  const builder={withIndex(_index,fn){if(fn){const q={eq(field,value){constraints.push(row=>row[field]===value);return q},lt(field,value){constraints.push(row=>row[field]<value);return q}};fn(q)}return builder},order(order){descending=order==='desc';return builder},
    async collect(){const found=[...rows.values()].filter(r=>r._id.startsWith(table+':')&&constraints.every(fn=>fn(r))).sort((a,b)=>a._creationTime-b._creationTime);return structuredClone(descending?found.reverse():found)},
    async unique(){const found=await builder.collect();if(found.length>1)throw Error('Duplicate');return found[0]??null},async first(){return (await builder.collect())[0]??null},async take(n){return (await builder.collect()).slice(0,n)}};
   return builder;
@@ -61,10 +64,23 @@ test('Gmail reset action fixes sender, requires TLS, rejects injected recipients
   await run(gmail,'sendPasswordReset',null,{email:'customer@example.com',code:'a'.repeat(32)});
   assert.equal(sent.from,'Movara Car Hire <movaracarhire@gmail.com>');assert.ok(sent.text.includes('a'.repeat(32)));assert.equal(closed,1);
   await assert.rejects(run(gmail,'sendPasswordReset',null,{email:'customer@example.com\r\nBcc: other@example.com',code:'a'.repeat(32)}),/Invalid/);
+  nodemailer.createTransport=()=>({verify:async()=>true,close:()=>{}});
+  assert.deepEqual(await run(gmail,'verifySetup',null),{smtpReady:true});
   nodemailer.createTransport=()=>({sendMail:async()=>{throw Error('private SMTP server details')},close:()=>closed++});
   await assert.rejects(run(gmail,'sendPasswordReset',null,{email:'customer@example.com',code:'a'.repeat(32)}),/^Error: Password reset email could not be delivered\.$/);
   assert.equal(closed,2);
  } finally {nodemailer.createTransport=original;if(oldPassword===undefined)delete process.env.AUTH_GMAIL_APP_PASSWORD;else process.env.AUTH_GMAIL_APP_PASSWORD=oldPassword;}
+});
+test('CLI owner bootstrap creates only the designated owner and refuses overwriting any existing account',async()=>{
+ try {
+  const hash='test-only-hash-'.repeat(8);
+  const userId=await run(security,'bootstrapOwner',null,{hashedSecret:hash});
+  assert.equal((await db.get(userId)).email,'movaracarhire@gmail.com');
+  const membership=await db.query('staffMemberships').withIndex('by_user',q=>q.eq('userId',userId)).unique();
+  assert.deepEqual(membership.roles,['owner']);assert.equal(membership.active,true);
+  await assert.rejects(run(security,'bootstrapOwner',null,{hashedSecret:'different-hash-'.repeat(8)}),/already exists/);
+  assert.equal((await db.query('authAccounts').withIndex('userIdAndProvider',q=>q.eq('userId',userId)).unique()).secret,hash);
+ } finally {rows.clear();sessionIds.clear();}
 });
 test('full in-person booking, approval and return flow enforces ownership and standing',async()=>{
  try {
@@ -243,6 +259,89 @@ test('full in-person booking, approval and return flow enforces ownership and st
  await run(vehicles,'save',owner,noCategory);
  assert.equal((await db.get(otherCar)).category,undefined);
  assert.equal((await run(vehicles,'publicList',null,{})).find(row=>row._id===otherCar).category,'');
+ // Manual receipt verification gates real release, refunds and deposit settlement.
+ const paymentBooking=await run(bookings,'create',customer,{vehicleId:otherCar,requestKey:crypto.randomUUID(),pickupDate:date(0),returnDate:date(2),pickupLocation:'Nairobi',phone:'+447700900123'});
+ const receipt={bookingId:paymentBooking,rentalKes:1000,depositKes:500,receivedKes:1500,receivingDetails:'Synthetic receiving details for handler tests only',transactionCode:'TESTPAY001',paidAt:Date.now(),contractSigned:true,clearanceConfirmed:true,receivingAccountChecked:true};
+ await assert.rejects(run(handovers,'recordReceipt',owner,receipt),/Approve/);
+ await run(bookings,'approve',owner,{id:paymentBooking,manualClearance:{contractSigned:true,requirementsMet:true}});
+ await assert.rejects(run(handovers,'release',owner,{bookingId:paymentBooking,confirmed:true}),/verified receipt/);
+ await assert.rejects(run(handovers,'recordReceipt',customer,receipt),/permission/);
+ await assert.rejects(run(handovers,'recordReceipt',owner,{...receipt,contractSigned:false}),/signed paper/);
+ await assert.rejects(run(handovers,'recordReceipt',owner,{...receipt,receivedKes:1400}),/must match/);
+ await assert.rejects(run(handovers,'recordReceipt',owner,{...receipt,paidAt:Date.now()-86400000}),/payment time/);
+ const receiptId=await run(handovers,'recordReceipt',owner,receipt);
+ assert.equal(await run(handovers,'recordReceipt',owner,receipt),receiptId);
+ const customerPaymentView=(await run(bookings,'mine',customer)).find(row=>row._id===paymentBooking);
+ assert.equal(customerPaymentView.handoverReady,true);assert.equal(customerPaymentView.agreedRentalKes,1000);assert.equal('transactionCode' in customerPaymentView,false);
+ await assert.rejects(run(bookings,'cancelApproval',owner,{id:paymentBooking,approvalVersion:1,notHandedOverConfirmed:true}),/payment/);
+ const secondPaymentBooking=await run(bookings,'create',customer,{vehicleId:otherCar,requestKey:crypto.randomUUID(),pickupDate:date(5),returnDate:date(7),pickupLocation:'Nairobi',phone:'+447700900123'});
+ await run(bookings,'approve',owner,{id:secondPaymentBooking,manualClearance:{contractSigned:true,requirementsMet:true}});
+ await assert.rejects(run(handovers,'recordReceipt',owner,{...receipt,bookingId:secondPaymentBooking}),/another booking/);
+ await run(handovers,'release',owner,{bookingId:paymentBooking,confirmed:true});
+ assert.ok((await db.get(receiptId)).releasedAt);
+ await assert.rejects(run(handovers,'recordRefund',owner,{bookingId:paymentBooking,refundedKes:1500,transactionCostKes:0,reference:'test-refund',reason:'Not a real refund',confirmed:true}),/pre-handover/);
+ await run(care,'recordReturn',owner,{bookingId:paymentBooking,condition:'good',rulesFollowed:true,disposition:'clear',notes:'Handler-test return',handedOverConfirmed:true});
+ await assert.rejects(run(handovers,'settleDeposit',owner,{bookingId:paymentBooking,returnedKes:400,deductionsKes:0,notes:'Incorrect total',confirmed:true}),/must match/);
+ await run(handovers,'settleDeposit',owner,{bookingId:paymentBooking,returnedKes:500,deductionsKes:0,notes:'Handler-test deposit settled',confirmed:true});
+ assert.equal((await db.get(receiptId)).depositSettlement.returnedKes,500);
+ await run(handovers,'recordReceipt',owner,{...receipt,bookingId:secondPaymentBooking,transactionCode:'TESTPAY002'});
+ await run(handovers,'recordRefund',owner,{bookingId:secondPaymentBooking,refundedKes:1480,transactionCostKes:20,reference:'test-refund',reason:'Handler-test documented transaction costs',confirmed:true});
+ await assert.rejects(run(handovers,'release',owner,{bookingId:secondPaymentBooking,confirmed:true}),/verified receipt/);
+ await run(bookings,'cancelApproval',owner,{id:secondPaymentBooking,approvalVersion:1,notHandedOverConfirmed:true});
+ await assert.rejects(run(bookings,'approve',owner,{id:secondPaymentBooking,manualClearance:{contractSigned:true,requirementsMet:true}}),/refunded/);
+ // Privacy requests enforce ownership, review permissions and rental-retention holds.
+ await run(privacy,'create',customer,{kind:'access',details:'Please provide my account data.'});
+ const accessRequest=(await run(privacy,'mine',customer))[0];
+ assert.equal((await run(privacy,'mine',other)).length,0);
+ await assert.rejects(run(privacy,'list',customer),/permission/);
+ await assert.rejects(run(privacy,'create',customer,{kind:'access',details:'Duplicate'}),/open request/);
+ const exported=await run(privacy,'exportMine',customer);
+ assert.equal(exported.account.email,'one@example.invalid');assert.ok(!JSON.stringify(exported).includes('test-hash'));
+ assert.ok(exported.bookings.every(row=>row.reference!==overlap));
+ await assert.rejects(run(privacy,'review',customer,{id:accessRequest._id,status:'completed',customerMessage:'Done'}),/permission/);
+ await run(privacy,'review',owner,{id:accessRequest._id,status:'completed',customerMessage:'Your download is available in your dashboard.'});
+ await run(privacy,'create',customer,{kind:'deletion',details:'Please delete my account.'});
+ const held=(await run(privacy,'mine',customer)).find(row=>row.kind==='deletion');
+ await assert.rejects(run(privacy,'review',owner,{id:held._id,status:'completed',customerMessage:'Deleted'}),/Delete account/);
+ await assert.rejects(run(privacy,'eraseAccount',owner,{id:held._id,confirmed:true}),/retention review/);
+ assert.ok(await db.get(customer));
+ const disposable=await db.insert('users',{email:'privacy-test@example.invalid'});
+ await db.insert('authAccounts',{userId:disposable,provider:'password',providerAccountId:'privacy-test@example.invalid',secret:'private-test-hash'});
+ await db.insert('movaraCredentialGuards',{userId:disposable,secretHash:'private-test-hash',changedAt:Date.now()-1000});
+ sessionIds.set(disposable,await db.insert('authSessions',{userId:disposable,expirationTime:Date.now()+86400000}));
+ const pendingDeletionBooking=await run(bookings,'create',disposable,{vehicleId:otherCar,requestKey:crypto.randomUUID(),pickupDate:date(60),returnDate:date(62),pickupLocation:'Nairobi',phone:'+447700900123'});
+ await run(privacy,'create',disposable,{kind:'deletion',details:'Remove my account and pending booking.'});
+ const deletion=(await run(privacy,'mine',disposable))[0];
+ await assert.rejects(run(privacy,'eraseAccount',owner,{id:deletion._id,confirmed:false}),/Confirm/);
+ await run(privacy,'eraseAccount',owner,{id:deletion._id,confirmed:true});
+ assert.equal(await db.get(disposable),null);assert.equal(await db.get(pendingDeletionBooking),null);assert.equal(await db.get(sessionIds.get(disposable)),null);
+ assert.equal((await db.query('authAccounts').withIndex('userIdAndProvider',q=>q.eq('userId',disposable)).collect()).length,0);
+ assert.equal((await db.get(deletion._id)).details,'Removed after account deletion');
+ await assert.rejects(run(privacy,'exportMine',disposable),/Sign in/);
+ await run(privacy,'create',owner,{kind:'deletion',details:'Do not delete the protected owner.'});
+ const ownerRequest=(await run(privacy,'mine',owner))[0];
+ await assert.rejects(run(privacy,'eraseAccount',owner,{id:ownerRequest._id,confirmed:true}),/cannot be deleted/);
+ // Public enquiries are persisted before WhatsApp details are returned, without creating customer accounts.
+ const enquiryContext={runMutation:async(_reference,args)=>run(enquiries,'persist',null,args)};
+ const enquiry={requestKey:crypto.randomUUID(),kind:'booking',name:'Guest Customer',phone:'0716741039',email:'guest@example.invalid',vehicle:'Test Vehicle',pickupDate:date(1)+'T09:00',returnDate:date(1)+'T17:00',pickupLocation:'Nairobi',returnLocation:'Nairobi',message:'Please confirm availability.',website:''};
+ const guest=await enquiries.submit._handler(enquiryContext,enquiry);
+ assert.equal((await db.get(guest.reference)).phone,'+254716741039');assert.equal((await db.get(guest.reference)).status,'new');
+ assert.equal((await enquiries.submit._handler(enquiryContext,enquiry)).reference,guest.reference);
+ await assert.rejects(enquiries.submit._handler(enquiryContext,{...enquiry,name:'Changed details'}),/different details/);
+ await assert.rejects(enquiries.submit._handler(enquiryContext,{...enquiry,requestKey:crypto.randomUUID(),website:'bot'}),/refresh/);
+ await assert.rejects(enquiries.submit._handler(enquiryContext,{...enquiry,requestKey:crypto.randomUUID(),returnDate:enquiry.pickupDate}),/return must be after/);
+ await assert.rejects(run(enquiries,'list',customer),/permission/);
+ await assert.rejects(run(enquiries,'review',customer,{id:guest.reference,status:'contacted'}),/permission/);
+ await run(enquiries,'review',owner,{id:guest.reference,status:'contacted'});
+ assert.equal((await run(enquiries,'list',owner)).find(row=>row._id===guest.reference).status,'contacted');
+ for(let n=0;n<4;n++)await enquiries.submit._handler(enquiryContext,{...enquiry,requestKey:crypto.randomUUID()});
+ await assert.rejects(enquiries.submit._handler(enquiryContext,{...enquiry,requestKey:crypto.randomUUID()}),/Too many/);
+ const globalGuard=await db.query('movaraEnquiryLimits').withIndex('by_key',q=>q.eq('key','day:'+today)).unique();
+ assert.equal(globalGuard.count,5);await db.patch(globalGuard._id,{count:100});
+ await assert.rejects(enquiries.submit._handler(enquiryContext,{...enquiry,phone:'+447700900999',requestKey:crypto.randomUUID()}),/Too many/);
+ await db.patch(globalGuard._id,{count:5});
+ const expiredGuard=await db.insert('movaraEnquiryLimits',{key:'old-guard',day:date(-5),count:1});
+ await run(enquiries,'cleanupLimits',null);assert.equal(await db.get(expiredGuard),null);assert.ok(await db.get(globalGuard._id));
  // Actual session handlers reject expired activity and never revive it on a heartbeat.
  assert.ok(await run(security,'status',customer));
  const activity=await db.insert('movaraSessionActivity',{sessionId:sessionIds.get(customer),lastActiveAt:Date.now()-31*60000});

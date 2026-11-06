@@ -39,7 +39,6 @@ async function request<T>(target: Endpoint<T>, args: Args = {}, method = "GET"):
   if (!response.ok) {
     if (response.status === 401 && adminToken) {
       localStorage.removeItem("movara_admin_token");
-      window.location.assign("/admin-login");
     }
     throw new Error(typeof result.detail === "string" ? result.detail : JSON.stringify(result));
   }

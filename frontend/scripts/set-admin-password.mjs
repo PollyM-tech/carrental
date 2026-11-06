@@ -5,10 +5,11 @@ import { emitKeypressEvents } from 'node:readline';
 import { Password } from '@convex-dev/auth/providers/Password';
 import { materializeCredentials } from '../convex/lib/credentials.js';
 const email = 'movaracarhire@gmail.com';
+const production = process.argv.includes('--prod');
 const cli = ['node_modules/convex/bin/main.js', 'run'];
 function run(args) {
-  const result = spawnSync(process.execPath, ["--import", new URL("./node-network.mjs", import.meta.url).href, ...cli, ...args], { encoding: 'utf8', timeout: 40000 });
-  if (result.status !== 0) throw new Error('Unable to reach/update Convex. Secret-bearing output was suppressed.');
+  const result = spawnSync(process.execPath, ["--import", new URL("./node-network.mjs", import.meta.url).href, ...cli, ...args, ...(production ? ['--prod'] : [])], { encoding: 'utf8', timeout: 40000 });
+  if (result.error || result.status !== 0) throw new Error('Unable to reach/update Convex. Secret-bearing output was suppressed.');
   return result.stdout.trim() ? JSON.parse(result.stdout) : null;
 }
 async function readPassword(label) {
@@ -44,8 +45,16 @@ if (process.stdin.isTTY) {
   if (confirmation !== password) throw new Error('Passwords do not match. No changes made.');
 }
 if (!password) throw new Error('Provide the admin password through stdin.');
-const owner = run(['--inline-query', `const u = await ctx.db.query("users").filter(q=>q.eq(q.field("email"),${JSON.stringify(email)})).unique(); if (!u) return null; const m=await ctx.db.query("staffMemberships").withIndex("by_user",q=>q.eq("userId",u._id)).unique(); return {id:u._id,owner:!!(m?.active&&m.roles.includes("owner"))};`]);
-if (!owner?.owner) throw new Error('The existing designated owner account must be provisioned before resetting credentials.');
+const ownerQuery = `const u = await ctx.db.query("users").filter(q=>q.eq(q.field("email"),${JSON.stringify(email)})).unique(); if (!u) return null; const m=await ctx.db.query("staffMemberships").withIndex("by_user",q=>q.eq("userId",u._id)).unique(); return {id:u._id,owner:!!(m?.active&&m.roles.includes("owner"))};`;
+let owner = run(['--inline-query', ownerQuery]);
+if (!owner) {
+  if (password.length < 12 || password.length > 128) throw new Error('Use 12–128 characters when creating the production owner account.');
+  const result = spawnSync(process.execPath, ["--import", new URL("./node-network.mjs", import.meta.url).href, 'node_modules/convex/bin/main.js', 'env', 'get', 'MOVARA_OWNER_SETUP_SECRET', ...(production ? ['--prod'] : [])], { encoding: 'utf8', timeout: 40000 });
+  if (result.error || result.status !== 0 || !result.stdout.trim()) throw new Error('Configure the target deployment auth environment before creating its owner.');
+  run(['auth:signIn', JSON.stringify({ provider: 'password', params: { flow: 'signUp', email, password, portal: 'admin', setupCode: result.stdout.trim() } })]);
+  owner = run(['--inline-query', ownerQuery]);
+}
+if (!owner?.owner) throw new Error('The designated account must have an active owner membership before resetting credentials.');
 const crypto = materializeCredentials(Password()).crypto;
 if (!crypto?.hashSecret || !crypto.verifySecret) throw new Error('Password hashing is unavailable. No changes made.');
 const hashedSecret = await crypto.hashSecret(password);

@@ -45,3 +45,17 @@ export const passwordResetAvailable = query({ args: {}, handler: async () => pas
 
 export const completePasswordReset = internalMutation({ args: { userId: v.id("users") }, handler: async (ctx, { userId }) => { await prepareCredentialGuard(ctx, userId); } });
 export const googleSignInAvailable = query({ args: {}, handler: async () => Boolean(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) });
+
+// CLI-only initial production setup. Never overwrites an existing account.
+export const bootstrapOwner = internalMutation({ args: { hashedSecret: v.string() }, handler: async (ctx, { hashedSecret }) => {
+  if (hashedSecret.length < 32 || hashedSecret.length > 1000) throw new Error("Invalid password hash.");
+  const email = "movaracarhire@gmail.com";
+  const existing = await ctx.db.query("users").withIndex("email", q => q.eq("email", email)).collect();
+  if (existing.length) throw new Error("The designated account already exists. Use the password maintenance utility.");
+  const userId = await ctx.db.insert("users", { email });
+  await ctx.db.insert("authAccounts", { userId, provider: "password", providerAccountId: email, secret: hashedSecret });
+  await ctx.db.insert("staffMemberships", { userId, roles: ["owner"], active: true });
+  await prepareCredentialGuard(ctx, userId);
+  await ctx.db.insert("accessEvents", { subjectId: userId, actorId: userId, action: "owner.provisioned", occurredAt: Date.now() });
+  return userId;
+}});

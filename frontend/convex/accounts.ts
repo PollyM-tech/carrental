@@ -15,7 +15,7 @@ export const current = query({
     if (!user) return null;
     const membership = await ctx.db.query("staffMemberships").withIndex("by_user", q => q.eq("userId", userId)).unique();
     const owner = user.email === "movaracarhire@gmail.com" && membership?.active && membership.roles.includes("owner");
-    return { id: userId, email: user.email ?? "", phone: user.phone ?? "", roles: owner ? ["owner"] : [], staff: Boolean(owner) };
+    return { id: userId, name: user.name ?? "", email: user.email ?? "", phone: user.phone ?? "", roles: owner ? ["owner"] : [], staff: Boolean(owner) };
   },
 });
 
@@ -27,7 +27,7 @@ export const adminOverview = query({
       email: user.email ?? "",
       owner: membership.roles.includes("owner"),
       roles: membership.roles,
-      availablePaths: ["/dashboard", "/dashboard/bookings", "/dashboard/cars", "/dashboard/fleet"],
+      availablePaths: ["/dashboard", "/dashboard/bookings", "/dashboard/cars", "/dashboard/fleet", "/dashboard/data-requests"],
     };
   },
 });

@@ -62,7 +62,7 @@ export default function AdminSidebar({
   const access = providedAccess ?? legacyAccess;
   function visible(href: string) {
     if (access?.owner) return true;
-    if (["/dashboard/team", "/dashboard/audit", "/dashboard/policies", "/dashboard/settings", "/dashboard/payment-settings", "/dashboard/data-requests"].includes(href)) return false;
+    if (["/dashboard/team", "/dashboard/audit", "/dashboard/policies", "/dashboard/settings", "/dashboard/payment-settings"].includes(href)) return false;
     if (["/dashboard/cars", "/dashboard/fleet"].includes(href)) return access?.roles.includes("fleet_manager");
     if (href === "/dashboard/payments") return access?.roles.includes("finance");
     if (href === "/dashboard/bookings") return access?.roles.some(role => ["front_desk", "finance", "kyc_reviewer"].includes(role));

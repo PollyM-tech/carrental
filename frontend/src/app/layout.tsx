@@ -1,4 +1,5 @@
 
+import CookieConsent from "@/components/privacy/CookieConsent";
 import type { Metadata } from "next";
 import "./globals.css";
 
@@ -40,6 +41,7 @@ export default function RootLayout({
         className="min-h-screen bg-white text-slate-950"
       >
         {children}
+        <CookieConsent />
       </body>
     </html>
   );

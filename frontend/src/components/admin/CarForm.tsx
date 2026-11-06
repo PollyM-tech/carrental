@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { useMutation } from "@/lib/api";
 import { X, ImagePlus } from "lucide-react";
@@ -210,7 +211,10 @@ export default function CarForm({ car, onClose }: CarFormProps) {
             <div className="grid gap-4 md:grid-cols-[240px_1fr] md:items-center">
               <div className="flex h-40 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white">
                 {existingImagePreview ? (
-                  <img
+                  <Image
+                    width={320}
+                    height={180}
+                    unoptimized
                     src={existingImagePreview}
                     alt="Selected car preview"
                     className="h-full w-full object-cover"

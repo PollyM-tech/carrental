@@ -28,3 +28,13 @@ export const sendPasswordReset = internalAction({
     finally { transport.close(); }
   },
 });
+
+// Operator-only connectivity check. Authenticates SMTP without sending a message.
+export const verifySetup = internalAction({ args: {}, handler: async () => {
+  const password = process.env.AUTH_GMAIL_APP_PASSWORD?.replace(/\s/g, "");
+  if (!password) throw new Error("Gmail App Password is not configured.");
+  const transport = nodemailer.createTransport({ host: "smtp.gmail.com", port: 465, secure: true, auth: { user: GMAIL_SENDER, pass: password }, connectionTimeout: 15000, greetingTimeout: 15000, socketTimeout: 20000, logger: false, debug: false });
+  try { await transport.verify(); return { smtpReady: true }; }
+  catch { throw new Error("Gmail SMTP verification failed. Check the App Password for movaracarhire@gmail.com and outbound SMTP connectivity."); }
+  finally { transport.close(); }
+}});

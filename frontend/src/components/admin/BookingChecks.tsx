@@ -1,4 +1,5 @@
 "use client";
+import HandoverRecord from "./HandoverRecord";
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
@@ -6,9 +7,9 @@ import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { Field, Message, buttonStyle, inputStyle } from "@/components/shared/FormFields";
 type Detail = NonNullable<FunctionReturnType<typeof api.customerCare.adminDetail>>;
-export default function BookingChecks({ bookingId }: { bookingId: Id<"movaraBookingRequests"> }) {
-  const [open, setOpen] = useState(false); const data = useQuery(api.customerCare.adminDetail, open ? { bookingId } : "skip");
-  return <div className="space-y-4 border-t pt-4"><button className="font-semibold text-orange-700 underline" onClick={() => setOpen(!open)}>{open ? "Close customer record" : "Verification, approval & return record"}</button>{open && (data ? <CustomerRecord key={`${data.verification?.revision ?? 0}:${data.verification?.updatedAt ?? 0}:${data.booking.status}:${data.booking.approvalVersion ?? 0}:${data.standing?.updatedAt ?? 0}`} data={data} /> : <p>Loading customer record…</p>)}</div>;
+export default function BookingChecks({ bookingId, initiallyOpen = false }: { bookingId: Id<"movaraBookingRequests">; initiallyOpen?: boolean }) {
+  const [open, setOpen] = useState(initiallyOpen); const data = useQuery(api.customerCare.adminDetail, open ? { bookingId } : "skip");
+  return <div className="space-y-4 border-t pt-4"><button className="font-semibold text-orange-700 underline" onClick={() => setOpen(!open)}>{open ? "Close customer record" : "Verification, approval & return record"}</button>{open && (data ? <><CustomerRecord key={`${data.verification?.revision ?? 0}:${data.verification?.updatedAt ?? 0}:${data.booking.status}:${data.booking.approvalVersion ?? 0}:${data.standing?.updatedAt ?? 0}`} data={data} /><HandoverRecord bookingId={bookingId} status={data.booking.status} /></> : <p>Loading customer record…</p>)}</div>;
 }
 function CustomerRecord({ data }: { data: Detail }) {
   const review = useMutation(api.customerCare.review); const approve = useMutation(api.bookingRequests.approve); const cancelApproval = useMutation(api.bookingRequests.cancelApproval); const recordReturn = useMutation(api.customerCare.recordReturn); const setStanding = useMutation(api.customerCare.setStanding);

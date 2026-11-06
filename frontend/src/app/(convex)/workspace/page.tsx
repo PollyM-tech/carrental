@@ -1,4 +1,6 @@
 "use client";
+import { bookingWhatsAppUrl } from "@/lib/booking-whatsapp";
+import CustomerData from "@/components/privacy/CustomerData";
 import SecondaryContact from "@/components/shared/SecondaryContact";
 import { Suspense, useRef, useState } from "react";
 import { useAuthActions } from "@convex-dev/auth/react";
@@ -22,6 +24,10 @@ function BookingWorkspace() {
   const vehicles = useQuery(api.vehicles.publicList, {});
   const create = useMutation(api.bookingRequests.create); const cancel = useMutation(api.bookingRequests.cancel); const savePhone = useMutation(api.accounts.savePhone);
   const { signOut } = useAuthActions(); const router = useRouter();
+  const [nameOverride, setName] = useState<string | null>(null);
+  const customerName = nameOverride ?? account?.name ?? "";
+  const [savedBooking, setSavedBooking] = useState<{ reference: string; url: string } | null>(null);
+  const [bookingFeedback, setBookingFeedback] = useState("");
   const [phoneOverride, setPhone] = useState<string | null>(null);
   const [vehicleOverride, setVehicle] = useState<string | null>(null);
   const vehicle = vehicleOverride ?? searchParams.get("car") ?? ""; const [pickup, setPickup] = useState(""); const [returned, setReturned] = useState(""); const [location, setLocation] = useState("Nairobi");
@@ -46,24 +52,27 @@ function BookingWorkspace() {
     <form id="request-booking" className="scroll-mt-6 space-y-4 rounded-2xl border bg-white p-6" onSubmit={async event => {
       event.preventDefault();
       if (bookingSubmitPending.current) return;
-      bookingSubmitPending.current = true; setBookingSubmitting(true); setMessage("");
+      bookingSubmitPending.current = true; setBookingSubmitting(true); setMessage(""); setBookingFeedback("");
       try {
         if (!chosen) throw new Error("Choose an available vehicle.");
         const internationalPhone = normalisePhone(phone); bookingDates(pickup, returned);
         requestKey.current ??= crypto.randomUUID();
-        await create({ requestKey: requestKey.current, vehicleId: vehicle as Id<"movaraVehicles">, pickupDate: pickup, returnDate: returned, pickupLocation: location, phone: internationalPhone });
+        const reference = await create({ customerName, requestKey: requestKey.current, vehicleId: vehicle as Id<"movaraVehicles">, pickupDate: pickup, returnDate: returned, pickupLocation: location, phone: internationalPhone });
+        const url = bookingWhatsAppUrl({ reference, name: customerName, email: account.email, phone: internationalPhone, vehicle: chosen.name, pickupDate: pickup, returnDate: returned, pickupLocation: location });
+        setSavedBooking({ reference, url });
         requestKey.current = null; setVehicle(""); setPickup(""); setReturned("");
         setPhone(current => current === null || current === phone ? internationalPhone : current);
-        setMessage("Booking request received. Movara will contact you to confirm vehicle availability, pricing and the next steps.");
-      } catch (error) { setMessage(error instanceof Error ? error.message : "Please retry."); }
+        setBookingFeedback("Your booking request is saved. Opening WhatsApp—tap Send to notify Movara.");
+        try { window.location.assign(url); } catch { setBookingFeedback("Your booking request is saved. Use Open WhatsApp below and tap Send to notify Movara."); }
+      } catch (error) { const raw = error instanceof Error ? error.message : "Please retry."; setBookingFeedback(raw.match(/Uncaught Error: ([^\n]+)/)?.[1] ?? raw); }
       finally { bookingSubmitPending.current = false; setBookingSubmitting(false); }
-    }}><h2 className="text-xl font-bold">Request a booking</h2><p className="text-sm text-slate-600">Tell us the vehicle you need and your dates. Our team will confirm availability and the flat daily or agreed market rate. Submitting a request does not reserve a vehicle or confirm a rental.</p>
-      <fieldset disabled={bookingSubmitting} className="space-y-4"><label className="block text-sm font-semibold">Vehicle<select required value={vehicle} onChange={event => { setVehicle(event.target.value); requestKey.current = null; }} className="mt-2 w-full rounded-xl border p-3"><option value="">{vehicles === undefined ? "Loading vehicles…" : "Choose a vehicle"}</option>{vehicles?.map(car => <option key={car._id} value={car._id}>{car.name} · {car.pricePerDay === null ? "Price on request" : `KES ${car.pricePerDay.toLocaleString()} / day`}</option>)}</select></label>
+    }}><h2 className="text-xl font-bold">Request a booking</h2><Message message={bookingFeedback} />{savedBooking && <div role="status" className="space-y-2 rounded-xl border border-green-200 bg-green-50 p-4 text-sm"><p>Saved booking reference: <span className="break-all font-mono">{savedBooking.reference}</span></p><a href={savedBooking.url} target="_blank" rel="noopener noreferrer" className="inline-block font-bold text-green-800 underline">Open WhatsApp and send booking details</a><p>Your request is already in Movara’s admin dashboard, even if you do not send the WhatsApp message.</p></div>}<p className="text-sm text-slate-600">Tell us the vehicle you need and your dates. Our team will confirm availability and the flat daily or agreed market rate. Submitting a request does not reserve a vehicle or confirm a rental.</p>
+      <fieldset disabled={bookingSubmitting} className="space-y-4"><Field required label="Full name" value={customerName} onChange={setName} /><Field required type="tel" label="Phone / WhatsApp number with country code" value={phone} onChange={setPhone} /><label className="block text-sm font-semibold">Vehicle<select required value={vehicle} onChange={event => { setVehicle(event.target.value); requestKey.current = null; }} className="mt-2 w-full rounded-xl border p-3"><option value="">{vehicles === undefined ? "Loading vehicles…" : "Choose a vehicle"}</option>{vehicles?.map(car => <option key={car._id} value={car._id}>{car.name} · {car.pricePerDay === null ? "Price on request" : `KES ${car.pricePerDay.toLocaleString()} / day`}</option>)}</select></label>
       {vehicles?.length === 0 && <p>No vehicles are currently published. Please contact Movara for assistance.</p>}
       {chosen && chosen.pricePerDay !== null && <p className="text-sm text-slate-600">Listed daily rate: KES {chosen.pricePerDay.toLocaleString()}. Availability is checked for your dates when you submit. Final rental terms are confirmed by our team; rental payment and the security deposit are collected only after all checks and handover approvals are complete.</p>}
       <div className="grid gap-4 sm:grid-cols-2"><Field required type="date" label="Pickup date" value={pickup} onChange={setPickup} /><Field required type="date" label="Return date" value={returned} onChange={setReturned} /></div>
       <Field required label="Pickup location in Kenya" value={location} onChange={setLocation} />
-      <p className="text-sm text-slate-600">Self-drive drivers must be 22+ and have held a licence for at least two years. Document checks, guarantor/next-of-kin details and a manually signed contract are required before handover. Cross-border travel is unavailable.</p><p className="text-xs text-slate-500">Do not enter ID/licence numbers or payment codes in these fields. No payment is requested at this stage.</p><button type="submit" disabled={bookingSubmitting} aria-busy={bookingSubmitting} className={buttonStyle}>{bookingSubmitting ? "Submitting…" : "Submit booking request"}</button></fieldset>
+      <p className="text-sm text-slate-600">Self-drive drivers must be 22+ and have held a licence for at least two years. Document checks, guarantor/next-of-kin details and a manually signed contract are required before handover. Cross-border travel is unavailable.</p><p className="text-xs text-slate-500">Do not enter ID/licence numbers or payment codes in these fields. No payment is requested at this stage.</p><button type="submit" disabled={bookingSubmitting} aria-busy={bookingSubmitting} className={buttonStyle}>{bookingSubmitting ? "Submitting…" : "Submit request & open WhatsApp"}</button></fieldset>
     </form>
     <section className="space-y-3 rounded-2xl border bg-white p-6"><h2 className="text-xl font-bold">Before you confirm a rental</h2><p className="text-sm text-slate-600">{rentalTerms.payment}</p><p className="text-sm text-slate-600">{rentalTerms.deposit}</p><p className="text-sm text-slate-600">{rentalTerms.contract}</p><p className="text-sm text-slate-600">{rentalTerms.failedHandover}</p><p className="text-sm text-slate-600">{rentalTerms.noShow}</p></section>
     <section className="space-y-4"><h2 className="text-2xl font-bold text-[#0B1C4D]">Past bookings</h2>{rows === undefined ? <p>Loading…</p> : rows.filter(row => ["returned", "cancelled"].includes(row.status)).length === 0 ? <p className="text-sm text-slate-600">Your returned and cancelled bookings will appear here.</p> : rows.filter(row => ["returned", "cancelled"].includes(row.status)).map(row => <BookingCard key={row._id} booking={row} busy={actionBusy} onCancel={() => {}} />)}</section>
@@ -77,6 +86,7 @@ function BookingWorkspace() {
       });
     }}>{phoneUnchanged ? "Saved" : "Save contact number"}</button></section>
     <p className="text-sm text-slate-600">Need assistance? <Link href="/contact" className="font-semibold text-orange-700 underline">Contact Movara</Link> or WhatsApp/call <a href="tel:+254716741039" className="underline">0716 741 039</a><span> / </span><SecondaryContact />.</p>
+    <CustomerData />
     <WhatsAppButton />
   </main>;
 }

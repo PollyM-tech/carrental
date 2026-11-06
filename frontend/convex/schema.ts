@@ -32,6 +32,7 @@ export default defineSchema({
     requestKey: v.string(),
     vehiclePreference: v.string(),
     vehicleId: v.optional(v.id("movaraVehicles")),
+    customerName: v.optional(v.string()),
     dailyRateKes: v.optional(v.number()),
     estimatedRentalKes: v.optional(v.number()),
     approvalVersion: v.optional(v.number()),
@@ -61,6 +62,25 @@ export default defineSchema({
     customerId: v.id("users"), status: v.union(v.literal("clear"), v.literal("flagged"), v.literal("second_chance")),
     reason: v.string(), updatedAt: v.number(), updatedBy: v.id("users"),
   }).index("by_customer", ["customerId"]),
+  movaraEnquiries: defineTable({
+    requestKey: v.string(), kind: v.union(v.literal("booking"), v.literal("general")), name: v.string(), phone: v.string(), email: v.string(),
+    vehicle: v.string(), pickupDate: v.string(), returnDate: v.string(), pickupLocation: v.string(), returnLocation: v.string(), message: v.string(),
+    status: v.union(v.literal("new"), v.literal("contacted"), v.literal("closed")), updatedAt: v.number(),
+  }).index("by_request", ["requestKey"]).index("by_status", ["status"]),
+  movaraEnquiryLimits: defineTable({ key: v.string(), day: v.string(), count: v.number() }).index("by_key", ["key"]).index("by_day", ["day"]),
+  movaraHandovers: defineTable({
+    bookingId: v.id("movaraBookingRequests"), customerId: v.id("users"), rentalKes: v.number(), depositKes: v.number(), receivedKes: v.number(),
+    receivingDetails: v.string(), transactionCode: v.string(), paidAt: v.number(), contractSigned: v.boolean(), clearanceConfirmed: v.boolean(),
+    status: v.union(v.literal("verified"), v.literal("refunded")), verifiedBy: v.id("users"), verifiedAt: v.number(),
+    releasedAt: v.optional(v.number()), releasedBy: v.optional(v.id("users")),
+    refund: v.optional(v.object({ refundedKes: v.number(), transactionCostKes: v.number(), reference: v.string(), reason: v.string(), recordedAt: v.number(), recordedBy: v.id("users") })),
+    depositSettlement: v.optional(v.object({ returnedKes: v.number(), deductionsKes: v.number(), notes: v.string(), recordedAt: v.number(), recordedBy: v.id("users") })),
+  }).index("by_booking", ["bookingId"]).index("by_transaction", ["transactionCode"]).index("by_customer", ["customerId"]),
+  movaraDataRequests: defineTable({
+    customerId: v.id("users"), kind: v.union(v.literal("access"), v.literal("correction"), v.literal("deletion")),
+    details: v.string(), status: v.union(v.literal("pending"), v.literal("in_review"), v.literal("completed"), v.literal("declined")),
+    customerMessage: v.string(), updatedAt: v.number(),
+  }).index("by_customer", ["customerId"]).index("by_status", ["status"]),
   staffMemberships: defineTable({
     userId: v.id("users"),
     roles: v.array(staffRole),

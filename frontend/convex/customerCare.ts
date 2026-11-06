@@ -47,6 +47,8 @@ export const recordReturn = mutation({ args: { bookingId: v.id("movaraBookingReq
   const { user } = await requireRole(ctx); const booking = await ctx.db.get(args.bookingId);
   if (!booking?.vehicleId || !["approved", "overdue"].includes(booking.status)) throw new Error("Choose an approved rental or an unresolved non-return.");
   if (!args.handedOverConfirmed) throw new Error("Confirm that the vehicle was actually handed over under the manually managed contract.");
+  const handover = await ctx.db.query("movaraHandovers").withIndex("by_booking", q => q.eq("bookingId", booking._id)).unique();
+  if (handover && (!handover.releasedAt || handover.status !== "verified")) throw new Error("Record vehicle release before recording its return.");
   requireReturnOutcome(args.condition, args.rulesFollowed, args.disposition);
   const notes = requiredText(args.notes, "Return findings", 2000);
   await ctx.db.insert("movaraReturnRecords", { ...args, notes, customerId: booking.customerId, vehicleId: booking.vehicleId, recordedBy: user._id, recordedAt: Date.now() });

@@ -210,7 +210,7 @@ export default function Footer() {
           </p>
 
           <p>
-            Self-drive car hire in Kenya.
+            <Link href="/privacy" className="underline hover:text-white">Privacy and cookies</Link>
           </p>
         </div>
       </div>

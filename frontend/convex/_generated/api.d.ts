@@ -11,8 +11,12 @@
 import type * as accounts from "../accounts.js";
 import type * as auth from "../auth.js";
 import type * as bookingRequests from "../bookingRequests.js";
+import type * as crons from "../crons.js";
 import type * as customerCare from "../customerCare.js";
+import type * as dataRequests from "../dataRequests.js";
+import type * as enquiries from "../enquiries.js";
 import type * as gmail from "../gmail.js";
+import type * as handovers from "../handovers.js";
 import type * as http from "../http.js";
 import type * as lib_auth_redirect from "../lib/auth_redirect.js";
 import type * as lib_booking_input from "../lib/booking_input.js";
@@ -39,8 +43,12 @@ declare const fullApi: ApiFromModules<{
   accounts: typeof accounts;
   auth: typeof auth;
   bookingRequests: typeof bookingRequests;
+  crons: typeof crons;
   customerCare: typeof customerCare;
+  dataRequests: typeof dataRequests;
+  enquiries: typeof enquiries;
   gmail: typeof gmail;
+  handovers: typeof handovers;
   http: typeof http;
   "lib/auth_redirect": typeof lib_auth_redirect;
   "lib/booking_input": typeof lib_booking_input;
