@@ -3,6 +3,7 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
+import VehiclePhotoViewer from "@/components/vehicles/VehiclePhotoViewer";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -179,6 +180,7 @@ export default function CarsPage() {
                   className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white transition-colors hover:border-orange-200"
                 >
                   <div className="relative h-44 overflow-hidden bg-slate-100">
+<VehiclePhotoViewer images={car.images?.length ? car.images : [car.image]} name={car.name}>
                     <Image
                       src={car.image}
                       alt={car.name}
@@ -194,7 +196,8 @@ export default function CarsPage() {
                           : "Unavailable"}
                       </span>
                     )}
-                  </div>
+                  </VehiclePhotoViewer>
+</div>
 
                   <div className="flex flex-1 flex-col p-4">
                     <p className="text-xs text-[#E86D00]">
@@ -214,22 +217,22 @@ export default function CarsPage() {
                       )}
                     </p>
 
-                    <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-xs text-slate-500">
-                      <span className="flex items-center gap-1">
+                    {(car.seats !== null || car.transmission || car.fuel) && (<div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-xs text-slate-500">
+                      {car.seats !== null && (<span className="flex items-center gap-1">
                         <Users size={14} />
-                        {car.seats !== null ? `${car.seats} seats` : "Seats to be confirmed"}
-                      </span>
+                        {car.seats} seats
+                      </span>)}
 
-                      <span className="flex items-center gap-1">
+                      {car.transmission && (<span className="flex items-center gap-1">
                         <Gauge size={14} />
                         {car.transmission}
-                      </span>
+                      </span>)}
 
-                      <span className="flex items-center gap-1">
+                      {car.fuel && (<span className="flex items-center gap-1">
                         <Fuel size={14} />
                         {car.fuel}
-                      </span>
-                    </div>
+                      </span>)}
+                    </div>)}
 
                     <div className="mt-auto grid grid-cols-2 gap-2 pt-5">
                       <Link

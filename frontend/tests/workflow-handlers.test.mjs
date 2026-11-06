@@ -194,7 +194,7 @@ test('full in-person booking, approval and return flow enforces ownership and st
  const minimalCar={name:'Quote-only car',category:'SUV',brand:'Test',model:'Optional',registration:'OPT123',description:'',isFeatured:false,status:'available',published:true,insuranceExpiresOn:date(365),inspectionExpiresOn:date(365)};
  const optionalCar=await run(vehicles,'save',owner,minimalCar);
  const publicOptional=(await run(vehicles,'publicList',null,{})).find(row=>row._id===optionalCar);
- assert.equal(publicOptional.pricePerDay,null);assert.equal(publicOptional.seats,null);assert.equal(publicOptional.transmission,'To be confirmed');
+ assert.equal(publicOptional.pricePerDay,null);assert.equal(publicOptional.seats,null);assert.equal(publicOptional.transmission,'');
  const quoteRequest=await run(bookings,'create',customer,{vehicleId:optionalCar,requestKey:crypto.randomUUID(),pickupDate:date(40),returnDate:date(42),pickupLocation:'Nairobi',phone:'+447700900123'});
  assert.equal((await db.get(quoteRequest)).estimatedRentalKes,undefined);
  await run(vehicles,'save',owner,{...minimalCar,id:optionalCar,pricePerDay:4000,seats:5,mileage:0,transmission:'Manual',fuel:'Petrol',location:'Nairobi'});

@@ -122,34 +122,34 @@ export default async function CarDetailsPage({
             </div>
 
             {/* Specifications */}
-            <div className="mt-6">
+            {(car.seats !== null || car.transmission || car.fuel || car.location) && (<div className="mt-6">
               <h2 className="text-base font-bold text-[#0B1C4D]">
                 Vehicle Specifications
               </h2>
 
               <div className="mt-4 grid grid-cols-2 gap-3">
-                <Spec
+                {car.seats !== null && (<Spec
                   icon={Users}
                   label="Seats"
-                  value={car.seats !== null ? `${car.seats} passengers` : "To be confirmed"}
-                />
-                <Spec
+                  value={`${car.seats} passengers`}
+                />)}
+                {car.transmission && (<Spec
                   icon={Gauge}
                   label="Transmission"
                   value={car.transmission}
-                />
-                <Spec
+                />)}
+                {car.fuel && (<Spec
                   icon={Fuel}
                   label="Fuel Type"
                   value={car.fuel}
-                />
-                <Spec
+                />)}
+                {car.location && (<Spec
                   icon={MapPin}
                   label="Location"
                   value={car.location}
-                />
+                />)}
               </div>
-            </div>
+            </div>)}
 
             {/* Booking action */}
             <div className="mt-6">

@@ -154,3 +154,10 @@ uploads keep the existing 24-hour cleanup. Customer vehicle details now display
 large photos, thumbnails and previous/next controls. Each photo retains JPEG/PNG/
 WebP validation, the 5MB input limit, compression and the server upload-size cap.
 Tests cover gallery order, legacy preservation, cross-vehicle rejection and removal.
+
+Public vehicle cover images now open a native modal photo viewer on Featured
+Cars, the fleet listing and the vehicle details page. The viewer includes all
+saved gallery images, thumbnails, a counter, previous/next navigation, arrow-key
+navigation and horizontal touch swipes. Native dialog behavior supplies modal
+focus containment, Escape dismissal and focus restoration; background scrolling
+is locked while open. Single-photo vehicles can still open an enlarged image.

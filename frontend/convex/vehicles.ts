@@ -32,8 +32,8 @@ async function gallery(ctx: QueryCtx, vehicle: Doc<"movaraVehicles">) {
 async function summary(ctx: QueryCtx, vehicle: Doc<"movaraVehicles">) {
   // Registration, compliance dates, block reasons and staff fields are never public.
   return { _id: vehicle._id, name: vehicle.name, category: vehicle.category, brand: vehicle.brand, model: vehicle.model,
-    year: vehicle.year ?? null, pricePerDay: vehicle.pricePerDay ?? null, seats: vehicle.seats ?? null, transmission: vehicle.transmission || "To be confirmed",
-    fuel: vehicle.fuel || "To be confirmed", location: vehicle.location || "To be confirmed", description: vehicle.description, isFeatured: vehicle.isFeatured,
+    year: vehicle.year ?? null, pricePerDay: vehicle.pricePerDay ?? null, seats: vehicle.seats ?? null, transmission: vehicle.transmission || "",
+    fuel: vehicle.fuel || "", location: vehicle.location || "", description: vehicle.description, isFeatured: vehicle.isFeatured,
     displayImageUrl: await photoUrl(ctx, vehicle), imageUrls: (await gallery(ctx, vehicle)).map(photo => photo.url) };
 }
 export const publicList = query({
