@@ -10,8 +10,8 @@ import { bookingDates } from "./lib/booking_input";
 
 const fields = {
   name: v.string(), category: v.string(), brand: v.string(), model: v.string(), year: v.optional(v.number()),
-  registration: v.string(), pricePerDay: v.number(), seats: v.number(), transmission: v.string(), fuel: v.string(),
-  mileage: v.number(), location: v.string(), description: v.string(), isFeatured: v.boolean(),
+  registration: v.string(), pricePerDay: v.optional(v.number()), seats: v.optional(v.number()), transmission: v.optional(v.string()), fuel: v.optional(v.string()),
+  mileage: v.optional(v.number()), location: v.optional(v.string()), description: v.string(), isFeatured: v.boolean(),
   status: v.union(v.literal("available"), v.literal("maintenance"), v.literal("unavailable")), published: v.boolean(),
   insuranceExpiresOn: v.optional(v.string()), inspectionExpiresOn: v.optional(v.string()),
   photoId: v.optional(v.union(v.id("movaraVehiclePhotos"), v.null())),
@@ -23,8 +23,8 @@ async function photoUrl(ctx: QueryCtx, vehicle: Doc<"movaraVehicles">) {
 async function summary(ctx: QueryCtx, vehicle: Doc<"movaraVehicles">) {
   // Registration, compliance dates, block reasons and staff fields are never public.
   return { _id: vehicle._id, name: vehicle.name, category: vehicle.category, brand: vehicle.brand, model: vehicle.model,
-    year: vehicle.year ?? null, pricePerDay: vehicle.pricePerDay, seats: vehicle.seats, transmission: vehicle.transmission,
-    fuel: vehicle.fuel, location: vehicle.location, description: vehicle.description, isFeatured: vehicle.isFeatured,
+    year: vehicle.year ?? null, pricePerDay: vehicle.pricePerDay ?? null, seats: vehicle.seats ?? null, transmission: vehicle.transmission || "To be confirmed",
+    fuel: vehicle.fuel || "To be confirmed", location: vehicle.location || "To be confirmed", description: vehicle.description, isFeatured: vehicle.isFeatured,
     displayImageUrl: await photoUrl(ctx, vehicle) };
 }
 export const publicList = query({
@@ -66,12 +66,12 @@ export const save = mutation({
     const registration = normaliseRegistration(args.registration);
     const duplicate = await ctx.db.query("movaraVehicles").withIndex("by_registration", q => q.eq("registration", registration)).unique();
     if (duplicate && duplicate._id !== args.id) throw new Error("A vehicle with this registration already exists, including archived records.");
-    const pricePerDay = positiveInteger(args.pricePerDay, "Daily rate", 10000000);
-    const seats = positiveInteger(args.seats, "Seats", 100);
-    if (!Number.isSafeInteger(args.mileage) || args.mileage < 0 || args.mileage > 100000000) throw new Error("Enter a valid non-negative mileage.");
+    const pricePerDay = args.pricePerDay === undefined ? undefined : positiveInteger(args.pricePerDay, "Daily rate", 10000000);
+    const seats = args.seats === undefined ? undefined : positiveInteger(args.seats, "Seats", 100);
+    if (args.mileage !== undefined && (!Number.isSafeInteger(args.mileage) || args.mileage < 0 || args.mileage > 100000000)) throw new Error("Enter a valid non-negative mileage.");
     if (args.year !== undefined && (!Number.isInteger(args.year) || args.year < 1900 || args.year > new Date().getUTCFullYear()+1)) throw new Error("Enter a valid model year.");
-    if (!["Automatic", "Manual"].includes(args.transmission)) throw new Error("Choose Automatic or Manual transmission.");
-    if (!["Petrol", "Diesel", "Hybrid", "Electric", "Other"].includes(args.fuel)) throw new Error("Choose a valid fuel type.");
+    if (args.transmission !== undefined && !["Automatic", "Manual"].includes(args.transmission)) throw new Error("Choose Automatic or Manual transmission.");
+    if (args.fuel !== undefined && !["Petrol", "Diesel", "Hybrid", "Electric", "Other"].includes(args.fuel)) throw new Error("Choose a valid fuel type.");
     const insuranceExpiresOn = args.insuranceExpiresOn ? calendarDate(args.insuranceExpiresOn) : undefined;
     const inspectionExpiresOn = args.inspectionExpiresOn ? calendarDate(args.inspectionExpiresOn) : undefined;
     if (args.published && (!insuranceExpiresOn || insuranceExpiresOn < nairobiToday() || !inspectionExpiresOn || inspectionExpiresOn < nairobiToday())) throw new Error("Current insurance and inspection expiry dates are required before publishing.");
@@ -82,7 +82,7 @@ export const save = mutation({
     }
     const data = { name: requiredText(args.name, "Vehicle name"), category: requiredText(args.category, "Category", 80),
       brand: requiredText(args.brand, "Brand", 80), model: requiredText(args.model, "Model", 80), year: args.year, registration, pricePerDay, seats,
-      transmission: args.transmission, fuel: args.fuel, mileage: args.mileage, location: requiredText(args.location, "Location"),
+      transmission: args.transmission, fuel: args.fuel, mileage: args.mileage, location: args.location?.trim() ? requiredText(args.location, "Location") : undefined,
       description: args.description.trim().slice(0, 2000), isFeatured: args.isFeatured, status: args.status, published: args.published,
       insuranceExpiresOn, inspectionExpiresOn, photoId, updatedAt: Date.now() };
     const id = args.id ?? await ctx.db.insert("movaraVehicles", { ...data, archived: false });

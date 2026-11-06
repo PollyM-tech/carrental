@@ -217,7 +217,7 @@ export default function CarsPage() {
                     <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-xs text-slate-500">
                       <span className="flex items-center gap-1">
                         <Users size={14} />
-                        {car.seats} seats
+                        {car.seats !== null ? `${car.seats} seats` : "Seats to be confirmed"}
                       </span>
 
                       <span className="flex items-center gap-1">

@@ -14,7 +14,7 @@ export type Car = {
   image: string;
   images?: string[];
   pricePerDay: number | null;
-  seats: number;
+  seats: number | null;
   transmission: string;
   fuel: string;
   location: string;

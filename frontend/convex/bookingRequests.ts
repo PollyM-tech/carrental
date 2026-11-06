@@ -39,7 +39,7 @@ export const create = mutation({
     if (!availableFor(vehicle, args.pickupDate, args.returnDate, blocks)) throw new Error("This vehicle is unavailable or its compliance does not cover your dates. Choose another vehicle or dates.");
     const vehiclePreference = vehicle.name;
     const dailyRateKes = vehicle.pricePerDay;
-    const estimatedRentalKes = rentalEstimate(dailyRateKes, rentalDays);
+    const estimatedRentalKes = dailyRateKes === undefined ? undefined : rentalEstimate(dailyRateKes, rentalDays);
     if (phone !== user.phone) await ctx.db.patch(user._id, { phone, phoneVerificationTime: undefined });
     const id = await ctx.db.insert("movaraBookingRequests", { customerId: user._id, requestKey: args.requestKey, vehiclePreference, vehicleId: vehicle._id, dailyRateKes, estimatedRentalKes, pickupDate: args.pickupDate, returnDate: args.returnDate, rentalDays, pickupLocation, phone, status: "requested", updatedAt: Date.now() });
     await ctx.db.insert("accessEvents", { subjectId: user._id, actorId: user._id, action: "booking.requested", occurredAt: Date.now() });

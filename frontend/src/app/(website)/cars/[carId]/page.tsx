@@ -140,7 +140,7 @@ export default async function CarDetailsPage({
                 <Spec
                   icon={Users}
                   label="Seats"
-                  value={`${car.seats} passengers`}
+                  value={car.seats !== null ? `${car.seats} passengers` : "To be confirmed"}
                 />
                 <Spec
                   icon={Gauge}

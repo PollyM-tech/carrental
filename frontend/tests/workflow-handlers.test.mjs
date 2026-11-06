@@ -190,6 +190,19 @@ test('full in-person booking, approval and return flow enforces ownership and st
  assert.equal((await run(vehicles,'publicList',null,{})).length,1); // The last approved rental is returned.
  assert.equal((await run(vehicles,'publicList',null,{}))[0].isFeatured,true); // Preserve the owner's Featured setting.
  assert.equal((await db.get(later)).status,'returned');
+ // Optional fleet details can be omitted, cleared on edit and still requested without a fabricated quote.
+ const minimalCar={name:'Quote-only car',category:'SUV',brand:'Test',model:'Optional',registration:'OPT123',description:'',isFeatured:false,status:'available',published:true,insuranceExpiresOn:date(365),inspectionExpiresOn:date(365)};
+ const optionalCar=await run(vehicles,'save',owner,minimalCar);
+ const publicOptional=(await run(vehicles,'publicList',null,{})).find(row=>row._id===optionalCar);
+ assert.equal(publicOptional.pricePerDay,null);assert.equal(publicOptional.seats,null);assert.equal(publicOptional.transmission,'To be confirmed');
+ const quoteRequest=await run(bookings,'create',customer,{vehicleId:optionalCar,requestKey:crypto.randomUUID(),pickupDate:date(40),returnDate:date(42),pickupLocation:'Nairobi',phone:'+447700900123'});
+ assert.equal((await db.get(quoteRequest)).estimatedRentalKes,undefined);
+ await run(vehicles,'save',owner,{...minimalCar,id:optionalCar,pricePerDay:4000,seats:5,mileage:0,transmission:'Manual',fuel:'Petrol',location:'Nairobi'});
+ await run(vehicles,'save',owner,{...minimalCar,id:optionalCar});
+ assert.equal((await db.get(optionalCar)).pricePerDay,undefined);assert.equal((await db.get(optionalCar)).seats,undefined);
+ await assert.rejects(run(vehicles,'save',owner,{...minimalCar,id:optionalCar,pricePerDay:0}),/positive whole/);
+ await assert.rejects(run(vehicles,'save',owner,{...minimalCar,id:optionalCar,mileage:-1}),/mileage/);
+ await assert.rejects(run(vehicles,'save',owner,{...minimalCar,id:optionalCar,transmission:'Unknown'}),/transmission/);
  // Actual session handlers reject expired activity and never revive it on a heartbeat.
  assert.ok(await run(security,'status',customer));
  const activity=await db.insert('movaraSessionActivity',{sessionId:sessionIds.get(customer),lastActiveAt:Date.now()-31*60000});

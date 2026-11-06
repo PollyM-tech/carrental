@@ -134,3 +134,12 @@ disables file/URL content access and SMTP debug logging, sets connection timeout
 and exposes generic errors. No credentials were entered or stored in source.
 Real delivery/reset completion remains unverified until the owner adds the
 credential. AUTH_SETUP.md includes the precise activation steps.
+
+Fleet uploads now accept omitted daily rate, seats, mileage, location,
+transmission and fuel; model year remains optional. Blank form values are stored
+as absent fields instead of invented defaults. Supplied numbers/enums are still
+validated. Public summaries use null for unknown price/seats and confirmation
+labels for unknown specs. Admin cards tolerate missing values, and customers can
+submit a quote-only booking request without a fabricated rental estimate.
+Workflow tests cover omission, clearing saved details, quote-only requests and
+rejection of invalid supplied values.

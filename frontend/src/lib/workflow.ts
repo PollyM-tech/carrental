@@ -16,4 +16,4 @@ export async function workflow<T>(path: string, options: { method?: string; data
   if (!response.ok) throw new Error(typeof result.detail === "string" ? result.detail : JSON.stringify(result));
   return result as T;
 }
-export type PublicCar = { _id: string; name: string; category: string; pricePerDay: number; displayImageUrl: string | null; seats: number; transmission: string; fuel: string; brand: string; model: string; location: string; description: string; isFeatured: boolean };
+export type PublicCar = { _id: string; name: string; category: string; pricePerDay: number | null; displayImageUrl: string | null; seats: number | null; transmission: string; fuel: string; brand: string; model: string; location: string; description: string; isFeatured: boolean };
