@@ -10,11 +10,11 @@ export default defineSchema({
   movaraSessionActivity: defineTable({ sessionId: v.id("authSessions"), lastActiveAt: v.number() }).index("by_session", ["sessionId"]),
   movaraLoginGuards: defineTable({ key: v.string(), failures: v.number(), lockedUntil: v.optional(v.number()), pending: v.array(v.object({ id: v.string(), expiresAt: v.number() })) }).index("by_key", ["key"]),
   movaraVehicles: defineTable({
-    name: v.string(), category: v.string(), brand: v.string(), model: v.string(),
+    name: v.string(), category: v.optional(v.string()), brand: v.string(), model: v.string(),
     year: v.optional(v.number()), registration: v.string(), pricePerDay: v.optional(v.number()),
     seats: v.optional(v.number()), transmission: v.optional(v.string()), fuel: v.optional(v.string()), mileage: v.optional(v.number()),
     location: v.optional(v.string()), description: v.string(), isFeatured: v.boolean(),
-    status: v.union(v.literal("available"), v.literal("maintenance"), v.literal("unavailable")),
+    status: v.union(v.literal("available"), v.literal("maintenance"), v.literal("booked"), v.literal("unavailable")),
     published: v.boolean(), archived: v.boolean(),
     insuranceExpiresOn: v.optional(v.string()), inspectionExpiresOn: v.optional(v.string()),
     photoId: v.optional(v.id("movaraVehiclePhotos")), photoIds: v.optional(v.array(v.id("movaraVehiclePhotos"))), updatedAt: v.number(),

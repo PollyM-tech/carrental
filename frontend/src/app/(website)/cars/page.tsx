@@ -28,7 +28,7 @@ export default function CarsPage() {
   const categories = useMemo(
     () => [
       "All Cars",
-      ...new Set(cars.map((car) => car.category)),
+      ...new Set(cars.map((car) => car.category).filter(Boolean)),
     ],
     [cars]
   );
@@ -196,9 +196,9 @@ export default function CarsPage() {
 </div>
 
                   <div className="flex flex-1 flex-col p-4">
-                    <p className="text-xs text-[#E86D00]">
+                    {car.category && (<p className="text-xs text-[#E86D00]">
                       {car.category}
-                    </p>
+                    </p>)}
 
                     <h2 className="mt-1 text-[15px] font-bold text-[#0B1C4D]">
                       {car.name}

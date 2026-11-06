@@ -161,3 +161,16 @@ saved gallery images, thumbnails, a counter, previous/next navigation, arrow-key
 navigation and horizontal touch swipes. Native dialog behavior supplies modal
 focus containment, Escape dismissal and focus restoration; background scrolling
 is locked while open. Single-photo vehicles can still open an enlarged image.
+
+Vehicle management now provides Available / Under maintenance / Booked dropdowns
+on gallery cards, table rows and the edit form. A dedicated owner-only mutation
+updates manual availability; it refuses Available while any approved or overdue
+rental remains. Archive is a management view including explicitly archived cars,
+manual non-available statuses and vehicles with approved/overdue bookings. The
+reservation flag is derived per vehicle from the full indexed booking history,
+not the latest 100 bookings. Automatic reservations retain their booking records
+and do not destructively archive the vehicle; cancellation/return resolves their
+Archive placement unless a manual maintenance/booked state still applies. The
+public catalogue continues to hide all these vehicles. Featured cards display a
+green Available badge beside the title. Tests cover status transitions, website
+hiding, customer permission checks and refusing to override a booked vehicle.

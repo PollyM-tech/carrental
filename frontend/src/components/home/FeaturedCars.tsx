@@ -98,18 +98,17 @@ export default function FeaturedCars() {
                   <span className="absolute left-3 top-3 rounded-full bg-white px-3 py-1 text-[11px] font-medium text-[#E86D00]">
                     Featured
                   </span>
-                  <span className="absolute right-3 top-3 rounded-full bg-green-50 px-3 py-1 text-[11px] font-semibold text-green-800">Available</span>
                 </VehiclePhotoViewer>
 </div>
 
                 <div className="flex flex-1 flex-col p-4">
-                  <span className="text-xs text-[#E86D00]">
+                  {car.category && (<span className="text-xs text-[#E86D00]">
                     {car.category}
-                  </span>
+                  </span>)}
 
-                  <h3 className="mt-1 text-[15px] font-bold text-[#0B1C4D]">
+                  <div className="mt-1 flex items-start justify-between gap-2">                  <h3 className="mt-1 text-[15px] font-bold text-[#0B1C4D]">
                     {car.name}
-                  </h3>
+                  </h3><span className="shrink-0 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800">Available</span></div>
 
                   <div className="mt-3 flex items-baseline gap-1">
                     <span className="text-base font-bold text-[#0B1C4D]">

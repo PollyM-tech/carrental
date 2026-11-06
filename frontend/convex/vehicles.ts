@@ -9,10 +9,10 @@ import { reservedConflict } from "./lib/rental_checks";
 import { bookingDates } from "./lib/booking_input";
 
 const fields = {
-  name: v.string(), category: v.string(), brand: v.string(), model: v.string(), year: v.optional(v.number()),
+  name: v.string(), category: v.optional(v.string()), brand: v.string(), model: v.string(), year: v.optional(v.number()),
   registration: v.string(), pricePerDay: v.optional(v.number()), seats: v.optional(v.number()), transmission: v.optional(v.string()), fuel: v.optional(v.string()),
   mileage: v.optional(v.number()), location: v.optional(v.string()), description: v.string(), isFeatured: v.boolean(),
-  status: v.union(v.literal("available"), v.literal("maintenance"), v.literal("unavailable")), published: v.boolean(),
+  status: v.union(v.literal("available"), v.literal("maintenance"), v.literal("booked"), v.literal("unavailable")), published: v.boolean(),
   insuranceExpiresOn: v.optional(v.string()), inspectionExpiresOn: v.optional(v.string()),
   photoIds: v.optional(v.array(v.id("movaraVehiclePhotos"))),
   photoId: v.optional(v.union(v.id("movaraVehiclePhotos"), v.null())),
@@ -31,7 +31,7 @@ async function gallery(ctx: QueryCtx, vehicle: Doc<"movaraVehicles">) {
 }
 async function summary(ctx: QueryCtx, vehicle: Doc<"movaraVehicles">) {
   // Registration, compliance dates, block reasons and staff fields are never public.
-  return { _id: vehicle._id, name: vehicle.name, category: vehicle.category, brand: vehicle.brand, model: vehicle.model,
+  return { _id: vehicle._id, name: vehicle.name, category: vehicle.category ?? "", brand: vehicle.brand, model: vehicle.model,
     year: vehicle.year ?? null, pricePerDay: vehicle.pricePerDay ?? null, seats: vehicle.seats ?? null, transmission: vehicle.transmission || "",
     fuel: vehicle.fuel || "", location: vehicle.location || "", description: vehicle.description, isFeatured: vehicle.isFeatured,
     displayImageUrl: await photoUrl(ctx, vehicle), imageUrls: (await gallery(ctx, vehicle)).map(photo => photo.url) };
@@ -63,7 +63,10 @@ export const list = query({
   handler: async ctx => {
     await requireRole(ctx, "fleet_manager");
     const vehicles = await ctx.db.query("movaraVehicles").order("desc").collect();
-    return await Promise.all(vehicles.map(async vehicle => ({ ...vehicle, displayImageUrl: await photoUrl(ctx, vehicle), galleryPhotos: await gallery(ctx, vehicle), blocks: await ctx.db.query("movaraVehicleBlocks").withIndex("by_vehicle", q => q.eq("vehicleId", vehicle._id)).collect() })));
+    return await Promise.all(vehicles.map(async vehicle => {
+      const rentals = await ctx.db.query("movaraBookingRequests").withIndex("by_vehicle", q => q.eq("vehicleId", vehicle._id)).collect();
+      return { ...vehicle, hasApprovedBooking: rentals.some(rental => rental.status === "approved" || rental.status === "overdue"), displayImageUrl: await photoUrl(ctx, vehicle), galleryPhotos: await gallery(ctx, vehicle), blocks: await ctx.db.query("movaraVehicleBlocks").withIndex("by_vehicle", q => q.eq("vehicleId", vehicle._id)).collect() };
+    }));
   },
 });
 export const save = mutation({
@@ -92,7 +95,7 @@ export const save = mutation({
       if (!photo || (photo.vehicleId ? photo.vehicleId !== args.id : photo.uploaderId !== user._id)) throw new Error("Use photos uploaded by this account for this vehicle.");
     }
     const photoId = photoIds[0];
-    const data = { name: requiredText(args.name, "Vehicle name"), category: requiredText(args.category, "Category", 80),
+    const data = { name: requiredText(args.name, "Vehicle name"), category: args.category?.trim() ? requiredText(args.category, "Category", 80) : undefined,
       brand: requiredText(args.brand, "Brand", 80), model: requiredText(args.model, "Model", 80), year: args.year, registration, pricePerDay, seats,
       transmission: args.transmission, fuel: args.fuel, mileage: args.mileage, location: args.location?.trim() ? requiredText(args.location, "Location") : undefined,
       description: args.description.trim().slice(0, 2000), isFeatured: args.isFeatured, status: args.status, published: args.published,
@@ -109,6 +112,21 @@ export const save = mutation({
     return id;
   },
 });
+export const setAvailability = mutation({
+  args: { id: v.id("movaraVehicles"), status: v.union(v.literal("available"), v.literal("maintenance"), v.literal("booked")) },
+  handler: async (ctx, { id, status }) => {
+    const { user } = await requireRole(ctx, "fleet_manager");
+    const vehicle = await ctx.db.get(id);
+    if (!vehicle || vehicle.archived) throw new Error("Restore this vehicle before changing availability.");
+    if (status === "available") {
+      const rentals = await ctx.db.query("movaraBookingRequests").withIndex("by_vehicle", q => q.eq("vehicleId", id)).collect();
+      if (rentals.some(rental => rental.status === "approved" || rental.status === "overdue")) throw new Error("Complete the vehicle return or cancel booking approval before marking it available.");
+    }
+    await ctx.db.patch(id, { status, updatedAt: Date.now() });
+    await ctx.db.insert("accessEvents", { subjectId: user._id, actorId: user._id, action: `vehicle.availability_${status}:${id}`, occurredAt: Date.now() });
+  },
+});
+
 export const setArchived = mutation({
   args: { id: v.id("movaraVehicles"), archived: v.boolean() },
   handler: async (ctx, { id, archived }) => {

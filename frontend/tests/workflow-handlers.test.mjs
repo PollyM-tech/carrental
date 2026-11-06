@@ -223,6 +223,26 @@ test('full in-person booking, approval and return flow enforces ownership and st
  await assert.rejects(vehicles.save._handler(galleryContext,{...minimalCar,id:otherCar,registration:'OPT456',photoIds:[photoA]}),/this vehicle/);
  await saveGallery({photoIds:[photoB]});assert.equal((await db.get(photoA)).vehicleId,undefined);assert.ok(scheduled.some(job=>job.photoId===photoA));
  await saveGallery({photoIds:[]});assert.equal((await db.get(optionalCar)).photoId,undefined);assert.deepEqual((await db.get(optionalCar)).photoIds,[]);
+ // Availability controls remove booked/maintenance vehicles from the public feed.
+ await assert.rejects(run(vehicles,'setAvailability',customer,{id:optionalCar,status:'booked'}),/permission/);
+ for (const status of ['booked','maintenance']) {
+  await run(vehicles,'setAvailability',owner,{id:optionalCar,status});
+  assert.equal((await db.get(optionalCar)).status,status);
+  assert.ok(!(await run(vehicles,'publicList',null,{})).some(row=>row._id===optionalCar));
+  await assert.rejects(run(bookings,'create',customer,{vehicleId:optionalCar,requestKey:crypto.randomUUID(),pickupDate:date(50),returnDate:date(52),pickupLocation:'Nairobi',phone:'+447700900123'}),/unavailable/);
+ }
+ await run(vehicles,'setAvailability',owner,{id:optionalCar,status:'available'});
+ assert.ok((await run(vehicles,'publicList',null,{})).some(row=>row._id===optionalCar));
+ await run(bookings,'approve',owner,{id:quoteRequest,manualClearance:{contractSigned:true,requirementsMet:true}});
+ await assert.rejects(run(vehicles,'setAvailability',owner,{id:optionalCar,status:'available'}),/return or cancel/);
+ assert.equal((await run(vehicles,'list',owner)).find(row=>row._id===optionalCar).hasApprovedBooking,true);
+ await run(bookings,'cancelApproval',owner,{id:quoteRequest,approvalVersion:1,notHandedOverConfirmed:true});
+ await run(vehicles,'setAvailability',owner,{id:optionalCar,status:'available'});
+ // Category is optional, including on already saved vehicles.
+ const noCategory={...minimalCar,id:otherCar,registration:'OPT456',category:undefined};
+ await run(vehicles,'save',owner,noCategory);
+ assert.equal((await db.get(otherCar)).category,undefined);
+ assert.equal((await run(vehicles,'publicList',null,{})).find(row=>row._id===otherCar).category,'');
  // Actual session handlers reject expired activity and never revive it on a heartbeat.
  assert.ok(await run(security,'status',customer));
  const activity=await db.insert('movaraSessionActivity',{sessionId:sessionIds.get(customer),lastActiveAt:Date.now()-31*60000});

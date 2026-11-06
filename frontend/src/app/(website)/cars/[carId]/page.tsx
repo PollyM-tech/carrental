@@ -88,9 +88,9 @@ export default async function CarDetailsPage({
             </h1>
 
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              <span className="rounded-full bg-orange-50 px-3 py-1 text-xs text-[#E86D00]">
+              {car.category && (<span className="rounded-full bg-orange-50 px-3 py-1 text-xs text-[#E86D00]">
                 {car.category}
-              </span>
+              </span>)}
 
               <span className="rounded-full bg-[#F5F8FF] px-3 py-1 text-xs text-[#0B1C4D]">
                 {car.status === "available"
