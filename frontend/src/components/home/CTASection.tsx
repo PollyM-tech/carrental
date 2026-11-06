@@ -81,6 +81,16 @@ export default function CTASection() {
                   />
                   Call Us Now
                 </a>
+<a
+                  href="tel:+254706040984"
+                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-white/25 bg-white/10 px-4 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                >
+                  <Phone
+                    size={16}
+                    aria-hidden="true"
+                  />
+                  Call 0706 040 984
+                </a>
 
               </div>
             </div>

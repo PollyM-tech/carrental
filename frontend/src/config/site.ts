@@ -3,6 +3,8 @@ export const siteConfig = {
   legalName: "MOVARA CARHIRE",
 
   phone: "0716 741 039",
+  secondaryPhone: "0706 040 984",
+  secondaryPhoneInternational: "+254706040984",
   whatsapp: "254716741039",
 
   email: "movaracarhire@gmail.com",

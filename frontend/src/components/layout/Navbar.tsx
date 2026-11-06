@@ -155,7 +155,17 @@ export default function Navbar() {
               size={16}
               aria-hidden="true"
             />
-            Call Us
+            0716 741 039
+          </a>
+<a
+            href="tel:+254706040984"
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-3.5 py-2 text-[13px] font-medium text-[#B84300] transition-colors hover:bg-orange-100"
+          >
+            <Phone
+              size={16}
+              aria-hidden="true"
+            />
+            0706 040 984
           </a>
 
           <a
@@ -229,7 +239,18 @@ export default function Navbar() {
                 size={16}
                 aria-hidden="true"
               />
-              Call Us
+              0716 741 039
+            </a>
+<a
+              href="tel:+254706040984"
+              onClick={closeMenu}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-3 py-2.5 text-sm font-medium text-[#B84300]"
+            >
+              <Phone
+                size={16}
+                aria-hidden="true"
+              />
+              0706 040 984
             </a>
 
             <a

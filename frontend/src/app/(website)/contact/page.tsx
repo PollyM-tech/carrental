@@ -243,6 +243,21 @@ function ContactFormContent({
                   </p>
                 </div>
               </a>
+<a
+                href="tel:+254706040984"
+                className="flex items-center gap-3 rounded-xl border border-slate-200 p-4 transition-colors hover:border-orange-200"
+              >
+                <ContactIcon icon={Phone} />
+
+                <div>
+                  <p className="text-xs text-slate-500">
+                    Phone
+                  </p>
+                  <p className="mt-1 text-[14px] font-bold text-[#0B1C4D]">
+                    0706 040 984
+                  </p>
+                </div>
+              </a>
 
               <a
                 href={`https://wa.me/${WHATSAPP_NUMBER}`}

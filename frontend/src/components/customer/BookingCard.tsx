@@ -1,4 +1,5 @@
 "use client";
+import SecondaryContact from "@/components/shared/SecondaryContact";
 import Image from "next/image";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "../../../convex/_generated/api";
@@ -30,7 +31,7 @@ export default function BookingCard({ booking, busy, onCancel }: { booking: Book
     <div className="space-y-4 border-t p-5">
       {booking.status !== "cancelled" && <ol aria-label="Booking progress" className="grid gap-2 text-xs sm:grid-cols-5">{stages.map((label, index) => <li key={label} aria-current={index === stage ? "step" : undefined} className={`rounded-lg border p-3 ${index <= stage ? "border-orange-200 bg-orange-50 text-orange-900" : "border-slate-200 text-slate-500"}`}><span className="mb-1 block font-bold">{index < stage || completed ? "✓" : index + 1}</span>{label}{index === 3 && !completed && <span className="mt-1 block">Awaiting confirmation</span>}</li>)}</ol>}
       <div className="rounded-xl bg-slate-50 p-4"><h4 className="font-semibold">{["returned", "cancelled"].includes(booking.status) ? "Booking update" : "Your next step"}</h4><p className="mt-1 text-sm leading-relaxed text-slate-600">{next[booking.status]}</p></div>
-      <div className="flex flex-wrap gap-4 text-sm font-semibold"><a href={whatsapp} target="_blank" rel="noopener noreferrer" className="text-green-800 underline">{pending ? "Request a change on WhatsApp" : "Contact Movara about this booking"}</a><a href="tel:+254716741039" className="underline">Call Movara</a>{pending && <button disabled={busy} onClick={onCancel} className="text-red-700 underline disabled:opacity-50">Cancel this request</button>}</div>
+      <div className="flex flex-wrap gap-4 text-sm font-semibold"><a href={whatsapp} target="_blank" rel="noopener noreferrer" className="text-green-800 underline">{pending ? "Request a change on WhatsApp" : "Contact Movara about this booking"}</a><a href="tel:+254716741039" className="underline">Call Movara</a><span> / </span><SecondaryContact />{pending && <button disabled={busy} onClick={onCancel} className="text-red-700 underline disabled:opacity-50">Cancel this request</button>}</div>
       {booking.status === "approved" && <p className="text-xs text-slate-500">To change or cancel an approved booking, contact Movara.</p>}
       {!["returned", "cancelled"].includes(booking.status) && <InPersonVerification bookingId={booking._id} editable={pending} />}
     </div>

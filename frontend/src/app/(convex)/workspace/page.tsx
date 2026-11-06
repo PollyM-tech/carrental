@@ -1,4 +1,5 @@
 "use client";
+import SecondaryContact from "@/components/shared/SecondaryContact";
 import { Suspense, useRef, useState } from "react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useMutation, useQuery } from "convex/react";
@@ -41,7 +42,7 @@ function BookingWorkspace() {
     <div className="flex flex-wrap items-center justify-between gap-4"><div><Link href="/" className="inline-flex items-center gap-2 font-semibold text-orange-700 underline underline-offset-4"><span aria-hidden="true">←</span> Back to website</Link><h1 className="mt-2 text-3xl font-bold text-[#0B1C4D]">Your booking dashboard</h1><p className="mt-2 break-all text-sm text-slate-600">{account.email}</p></div><button disabled={actionBusy} className="underline" onClick={() => void run(async () => { await signOut(); router.replace("/sign-in"); })}>Sign out</button></div>
     <Message message={message} />
     <section className="space-y-4" aria-labelledby="active-bookings"><div className="flex flex-wrap items-center justify-between gap-3"><h2 id="active-bookings" className="text-2xl font-bold text-[#0B1C4D]">Your active bookings</h2><a href="#request-booking" className="font-semibold text-orange-700 underline">Request another vehicle</a></div>{rows === undefined ? <p>Loading your bookings…</p> : rows.filter(row => !["returned", "cancelled"].includes(row.status)).length === 0 ? <div className="rounded-2xl border bg-white p-6"><p>You have no active bookings. Choose a vehicle and dates below to get started.</p></div> : rows.filter(row => !["returned", "cancelled"].includes(row.status)).map(row => <BookingCard key={row._id} booking={row} busy={actionBusy} onCancel={() => { if (actionBusy || !window.confirm("Cancel this booking request?")) return; void run(async () => { await cancel({ id: row._id }); setMessage("Booking request cancelled."); }); }} />)}</section>
-    <section className="space-y-3 rounded-2xl border border-orange-100 bg-orange-50/50 p-6"><h2 className="text-xl font-bold text-[#0B1C4D]">Prepare for pickup</h2><ul className="list-disc space-y-2 pl-5 text-sm text-slate-700"><li>Bring your original ID or passport and driving licence for in-person checks.</li><li>Have your guarantor’s and next-of-kin’s names and contact numbers ready, with their permission.</li><li>Self-drive drivers must be at least 22 and have held a licence for at least two years.</li><li>Review and sign the paper rental contract with Movara at handover.</li><li>Pay only after clearance. Movara must verify payment before releasing the vehicle.</li></ul><p className="text-sm">Need help arranging pickup? <a href="tel:+254716741039" className="font-semibold underline">Call 0716 741 039</a>.</p></section>
+    <section className="space-y-3 rounded-2xl border border-orange-100 bg-orange-50/50 p-6"><h2 className="text-xl font-bold text-[#0B1C4D]">Prepare for pickup</h2><ul className="list-disc space-y-2 pl-5 text-sm text-slate-700"><li>Bring your original ID or passport and driving licence for in-person checks.</li><li>Have your guarantor’s and next-of-kin’s names and contact numbers ready, with their permission.</li><li>Self-drive drivers must be at least 22 and have held a licence for at least two years.</li><li>Review and sign the paper rental contract with Movara at handover.</li><li>Pay only after clearance. Movara must verify payment before releasing the vehicle.</li></ul><p className="text-sm">Need help arranging pickup? <a href="tel:+254716741039" className="font-semibold underline">Call 0716 741 039</a><span> / </span><SecondaryContact />.</p></section>
     <form id="request-booking" className="scroll-mt-6 space-y-4 rounded-2xl border bg-white p-6" onSubmit={async event => {
       event.preventDefault();
       if (bookingSubmitPending.current) return;
@@ -75,7 +76,7 @@ function BookingWorkspace() {
         finally { contactSavePending.current = false; }
       });
     }}>{phoneUnchanged ? "Saved" : "Save contact number"}</button></section>
-    <p className="text-sm text-slate-600">Need assistance? <Link href="/contact" className="font-semibold text-orange-700 underline">Contact Movara</Link> or WhatsApp/call <a href="tel:+254716741039" className="underline">0716 741 039</a>.</p>
+    <p className="text-sm text-slate-600">Need assistance? <Link href="/contact" className="font-semibold text-orange-700 underline">Contact Movara</Link> or WhatsApp/call <a href="tel:+254716741039" className="underline">0716 741 039</a><span> / </span><SecondaryContact />.</p>
     <WhatsAppButton />
   </main>;
 }

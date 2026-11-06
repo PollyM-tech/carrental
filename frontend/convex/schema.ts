@@ -17,7 +17,7 @@ export default defineSchema({
     status: v.union(v.literal("available"), v.literal("maintenance"), v.literal("unavailable")),
     published: v.boolean(), archived: v.boolean(),
     insuranceExpiresOn: v.optional(v.string()), inspectionExpiresOn: v.optional(v.string()),
-    photoId: v.optional(v.id("movaraVehiclePhotos")), updatedAt: v.number(),
+    photoId: v.optional(v.id("movaraVehiclePhotos")), photoIds: v.optional(v.array(v.id("movaraVehiclePhotos"))), updatedAt: v.number(),
   }).index("by_registration", ["registration"]).index("by_archived", ["archived"]),
   movaraVehiclePhotos: defineTable({
     storageId: v.id("_storage"), uploaderId: v.id("users"),

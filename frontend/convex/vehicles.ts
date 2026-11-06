@@ -14,18 +14,27 @@ const fields = {
   mileage: v.optional(v.number()), location: v.optional(v.string()), description: v.string(), isFeatured: v.boolean(),
   status: v.union(v.literal("available"), v.literal("maintenance"), v.literal("unavailable")), published: v.boolean(),
   insuranceExpiresOn: v.optional(v.string()), inspectionExpiresOn: v.optional(v.string()),
+  photoIds: v.optional(v.array(v.id("movaraVehiclePhotos"))),
   photoId: v.optional(v.union(v.id("movaraVehiclePhotos"), v.null())),
 };
 async function photoUrl(ctx: QueryCtx, vehicle: Doc<"movaraVehicles">) {
   const photo = vehicle.photoId ? await ctx.db.get(vehicle.photoId) : null;
   return photo ? await ctx.storage.getUrl(photo.storageId) : null;
 }
+async function gallery(ctx: QueryCtx, vehicle: Doc<"movaraVehicles">) {
+  const ids = [...new Set([...(vehicle.photoId ? [vehicle.photoId] : []), ...(vehicle.photoIds ?? [])])];
+  const photos = await Promise.all(ids.map(async id => {
+    const photo = await ctx.db.get(id);
+    return photo ? { id, url: await ctx.storage.getUrl(photo.storageId) } : null;
+  }));
+  return photos.filter((photo): photo is { id: Id<"movaraVehiclePhotos">; url: string } => !!photo?.url);
+}
 async function summary(ctx: QueryCtx, vehicle: Doc<"movaraVehicles">) {
   // Registration, compliance dates, block reasons and staff fields are never public.
   return { _id: vehicle._id, name: vehicle.name, category: vehicle.category, brand: vehicle.brand, model: vehicle.model,
     year: vehicle.year ?? null, pricePerDay: vehicle.pricePerDay ?? null, seats: vehicle.seats ?? null, transmission: vehicle.transmission || "To be confirmed",
     fuel: vehicle.fuel || "To be confirmed", location: vehicle.location || "To be confirmed", description: vehicle.description, isFeatured: vehicle.isFeatured,
-    displayImageUrl: await photoUrl(ctx, vehicle) };
+    displayImageUrl: await photoUrl(ctx, vehicle), imageUrls: (await gallery(ctx, vehicle)).map(photo => photo.url) };
 }
 export const publicList = query({
   args: { pickupDate: v.optional(v.string()), returnDate: v.optional(v.string()) },
@@ -54,7 +63,7 @@ export const list = query({
   handler: async ctx => {
     await requireRole(ctx, "fleet_manager");
     const vehicles = await ctx.db.query("movaraVehicles").order("desc").collect();
-    return await Promise.all(vehicles.map(async vehicle => ({ ...vehicle, displayImageUrl: await photoUrl(ctx, vehicle), blocks: await ctx.db.query("movaraVehicleBlocks").withIndex("by_vehicle", q => q.eq("vehicleId", vehicle._id)).collect() })));
+    return await Promise.all(vehicles.map(async vehicle => ({ ...vehicle, displayImageUrl: await photoUrl(ctx, vehicle), galleryPhotos: await gallery(ctx, vehicle), blocks: await ctx.db.query("movaraVehicleBlocks").withIndex("by_vehicle", q => q.eq("vehicleId", vehicle._id)).collect() })));
   },
 });
 export const save = mutation({
@@ -75,22 +84,26 @@ export const save = mutation({
     const insuranceExpiresOn = args.insuranceExpiresOn ? calendarDate(args.insuranceExpiresOn) : undefined;
     const inspectionExpiresOn = args.inspectionExpiresOn ? calendarDate(args.inspectionExpiresOn) : undefined;
     if (args.published && (!insuranceExpiresOn || insuranceExpiresOn < nairobiToday() || !inspectionExpiresOn || inspectionExpiresOn < nairobiToday())) throw new Error("Current insurance and inspection expiry dates are required before publishing.");
-    const photoId = args.photoId === undefined ? old?.photoId : args.photoId ?? undefined;
-    if (photoId && photoId !== old?.photoId) {
-      const photo = await ctx.db.get(photoId);
-      if (!photo || photo.uploaderId !== user._id || photo.vehicleId) throw new Error("Upload a fresh vehicle photo from this account.");
+    const oldIds = [...new Set([...(old?.photoId ? [old.photoId] : []), ...(old?.photoIds ?? [])])];
+    const photoIds = args.photoIds ?? (args.photoId === undefined ? oldIds : args.photoId ? [args.photoId] : []);
+    if (photoIds.length > 12 || new Set(photoIds).size !== photoIds.length) throw new Error("Choose up to 12 different vehicle photos.");
+    for (const id of photoIds) {
+      const photo = await ctx.db.get(id);
+      if (!photo || (photo.vehicleId ? photo.vehicleId !== args.id : photo.uploaderId !== user._id)) throw new Error("Use photos uploaded by this account for this vehicle.");
     }
+    const photoId = photoIds[0];
     const data = { name: requiredText(args.name, "Vehicle name"), category: requiredText(args.category, "Category", 80),
       brand: requiredText(args.brand, "Brand", 80), model: requiredText(args.model, "Model", 80), year: args.year, registration, pricePerDay, seats,
       transmission: args.transmission, fuel: args.fuel, mileage: args.mileage, location: args.location?.trim() ? requiredText(args.location, "Location") : undefined,
       description: args.description.trim().slice(0, 2000), isFeatured: args.isFeatured, status: args.status, published: args.published,
-      insuranceExpiresOn, inspectionExpiresOn, photoId, updatedAt: Date.now() };
+      insuranceExpiresOn, inspectionExpiresOn, photoId, photoIds, updatedAt: Date.now() };
     const id = args.id ?? await ctx.db.insert("movaraVehicles", { ...data, archived: false });
     if (args.id) await ctx.db.patch(args.id, data);
-    if (photoId && photoId !== old?.photoId) await ctx.db.patch(photoId, { vehicleId: id });
-    if (old?.photoId && old.photoId !== photoId) {
-      await ctx.db.patch(old.photoId, { vehicleId: undefined });
-      await ctx.scheduler.runAfter(0, internal.vehicles.expireUnusedPhoto, { photoId: old.photoId });
+    // Link every selected photo to the saved vehicle; the first is the cover.
+    for (const selectedId of photoIds) await ctx.db.patch(selectedId, { vehicleId: id });
+    for (const removedId of oldIds.filter(oldId => !photoIds.includes(oldId))) {
+      await ctx.db.patch(removedId, { vehicleId: undefined });
+      await ctx.scheduler.runAfter(0, internal.vehicles.expireUnusedPhoto, { photoId: removedId });
     }
     await ctx.db.insert("accessEvents", { subjectId: user._id, actorId: user._id, action: `vehicle.${args.id ? "updated" : "created"}:${id}`, occurredAt: Date.now() });
     return id;

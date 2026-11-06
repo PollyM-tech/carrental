@@ -84,7 +84,7 @@ export default function CustomerAccount() {
     </form> : <>
       <section className="space-y-4 rounded-2xl border bg-white p-6">
         <h2 className="text-xl font-bold">1. Verify your WhatsApp number</h2>
-        <p className="text-sm">Send a verification reference to Movara on WhatsApp (0716 741 039). Staff check the sender before approving your number.</p>
+        <p className="text-sm">Send a verification reference to Movara on WhatsApp (0716 741 039). Staff check the sender before approving your number. Additional contact: <a href="tel:+254706040984" className="underline">0706 040 984</a>.</p>
         {verified ? <p className="text-green-700">Phone verified</p> : <div className="grid items-end gap-3 sm:grid-cols-3">
           <Field label="WhatsApp number, e.g. +254…" value={phone} onChange={setPhone} />
           <button disabled={busy} className={buttonStyle} onClick={() => void run(async () => { const response = await workflow<{ message: string; development_code?: string; reference?: string; whatsapp_url?: string; expires_at?: string }>("workflow/phone/request/", { method: "POST", data: { phone } }); if (response.reference && response.whatsapp_url && response.expires_at) setManual({ reference: response.reference, whatsapp_url: response.whatsapp_url, expires_at: response.expires_at }); setMessage(response.message + (response.development_code ? ` Code: ${response.development_code}` : "")); })}>Get verification reference</button>

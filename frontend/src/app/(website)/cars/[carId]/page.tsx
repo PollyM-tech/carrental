@@ -1,5 +1,5 @@
 
-import Image from "next/image";
+import VehicleGallery from "@/components/vehicles/VehicleGallery";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -74,16 +74,7 @@ export default async function CarDetailsPage({
 
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           {/* Vehicle image */}
-          <div className="relative h-[280px] overflow-hidden rounded-2xl bg-slate-200 sm:h-[380px] lg:h-[450px]">
-            <Image
-              src={car.image}
-              alt={car.name}
-              fill
-              priority
-              sizes="(max-width: 1024px) 100vw, 60vw"
-              className="object-cover"
-            />
-          </div>
+          <VehicleGallery images={car.images?.length ? car.images : [car.image]} name={car.name} />
 
           {/* Vehicle information */}
           <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-7">

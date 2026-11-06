@@ -143,3 +143,14 @@ labels for unknown specs. Admin cards tolerate missing values, and customers can
 submit a quote-only booking request without a fabricated rental estimate.
 Workflow tests cover omission, clearing saved details, quote-only requests and
 rejection of invalid supplied values.
+
+Vehicle galleries support up to 12 uploaded photos with the first photo used as
+cover. Admins can select/drop multiple files, choose a cover and remove individual
+photos before saving. The existing single photoId is retained for compatibility;
+legacy covers are preserved on edit and expanded into photoIds on save. Backend
+checks enforce photo ownership, vehicle association, unique IDs and the gallery
+limit. Removed photos are unlinked and scheduled for storage cleanup; abandoned
+uploads keep the existing 24-hour cleanup. Customer vehicle details now display
+large photos, thumbnails and previous/next controls. Each photo retains JPEG/PNG/
+WebP validation, the 5MB input limit, compression and the server upload-size cap.
+Tests cover gallery order, legacy preservation, cross-vehicle rejection and removal.

@@ -203,6 +203,26 @@ test('full in-person booking, approval and return flow enforces ownership and st
  await assert.rejects(run(vehicles,'save',owner,{...minimalCar,id:optionalCar,pricePerDay:0}),/positive whole/);
  await assert.rejects(run(vehicles,'save',owner,{...minimalCar,id:optionalCar,mileage:-1}),/mileage/);
  await assert.rejects(run(vehicles,'save',owner,{...minimalCar,id:optionalCar,transmission:'Unknown'}),/transmission/);
+ // Vehicle galleries preserve legacy covers, validate ownership, change cover and unlink removed photos.
+ const scheduled=[];
+ const galleryContext={...context(owner),scheduler:{runAfter:async(_delay,_fn,args)=>scheduled.push(args)},storage:{getUrl:async storageId=>`https://example.invalid/${storageId}`}};
+ const saveGallery=args=>vehicles.save._handler(galleryContext,{...minimalCar,id:optionalCar,...args});
+ const photoA=await db.insert('movaraVehiclePhotos',{storageId:'storage-a',uploaderId:owner,vehicleId:optionalCar});
+ const photoB=await db.insert('movaraVehiclePhotos',{storageId:'storage-b',uploaderId:owner});
+ const foreignPhoto=await db.insert('movaraVehiclePhotos',{storageId:'storage-foreign',uploaderId:other});
+ await db.patch(optionalCar,{photoId:photoA});
+ await saveGallery({});assert.deepEqual((await db.get(optionalCar)).photoIds,[photoA]);
+ await saveGallery({photoIds:[photoB,photoA]});
+ assert.equal((await db.get(optionalCar)).photoId,photoB);assert.equal((await db.get(photoB)).vehicleId,optionalCar);
+ const publicGallery=(await vehicles.publicList._handler({...galleryContext,auth:context(null).auth},{})).find(row=>row._id===optionalCar);
+ assert.deepEqual(publicGallery.imageUrls,['https://example.invalid/storage-b','https://example.invalid/storage-a']);
+ await assert.rejects(saveGallery({photoIds:[foreignPhoto]}),/this account/);
+ await assert.rejects(saveGallery({photoIds:[photoA,photoA]}),/different/);
+ await assert.rejects(saveGallery({photoIds:Array.from({length:13},(_,i)=>`photo-${i}`)}),/12/);
+ const otherCar=await run(vehicles,'save',owner,{...minimalCar,registration:'OPT456'});
+ await assert.rejects(vehicles.save._handler(galleryContext,{...minimalCar,id:otherCar,registration:'OPT456',photoIds:[photoA]}),/this vehicle/);
+ await saveGallery({photoIds:[photoB]});assert.equal((await db.get(photoA)).vehicleId,undefined);assert.ok(scheduled.some(job=>job.photoId===photoA));
+ await saveGallery({photoIds:[]});assert.equal((await db.get(optionalCar)).photoId,undefined);assert.deepEqual((await db.get(optionalCar)).photoIds,[]);
  // Actual session handlers reject expired activity and never revive it on a heartbeat.
  assert.ok(await run(security,'status',customer));
  const activity=await db.insert('movaraSessionActivity',{sessionId:sessionIds.get(customer),lastActiveAt:Date.now()-31*60000});

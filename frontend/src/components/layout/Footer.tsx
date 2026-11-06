@@ -8,6 +8,7 @@ import {
   Phone,
 } from "lucide-react";
 
+import { siteConfig } from "@/config/site";
 import { services } from "@/data/services";
 
 const BUSINESS_NAME = "Movara Car Hire";
@@ -148,6 +149,18 @@ export default function Footer() {
                 />
 
                 <span>{PHONE_NUMBER}</span>
+              </a>
+<a
+                href="tel:+254706040984"
+                className="flex items-start gap-3 text-[13px] text-slate-300 transition-colors hover:text-orange-300"
+              >
+                <Phone
+                  size={17}
+                  className="mt-0.5 shrink-0 text-[#FF7A00]"
+                  aria-hidden="true"
+                />
+
+                <span>{siteConfig.secondaryPhone}</span>
               </a>
 
               <div className="flex items-start gap-3 text-[13px] text-slate-300">
