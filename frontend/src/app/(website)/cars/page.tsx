@@ -189,13 +189,9 @@ export default function CarsPage() {
                       className="object-cover transition-transform duration-300 group-hover:scale-105"
                     />
 
-                    {car.status !== "available" && (
-                      <span className="absolute left-3 top-3 rounded-full bg-white px-3 py-1 text-xs font-medium text-[#0B1C4D]">
-                        {car.status === "booked"
-                          ? "Booked"
-                          : "Unavailable"}
-                      </span>
-                    )}
+                    <span className={`absolute left-3 top-3 rounded-full px-3 py-1 text-xs font-semibold ${car.status === "available" ? "bg-green-50 text-green-800" : "bg-white text-[#0B1C4D]"}`}>
+                      {car.status === "available" ? "Available" : car.status === "booked" ? "Booked" : "Unavailable"}
+                    </span>
                   </VehiclePhotoViewer>
 </div>
 

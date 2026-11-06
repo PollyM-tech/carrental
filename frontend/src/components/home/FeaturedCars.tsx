@@ -98,6 +98,7 @@ export default function FeaturedCars() {
                   <span className="absolute left-3 top-3 rounded-full bg-white px-3 py-1 text-[11px] font-medium text-[#E86D00]">
                     Featured
                   </span>
+                  <span className="absolute right-3 top-3 rounded-full bg-green-50 px-3 py-1 text-[11px] font-semibold text-green-800">Available</span>
                 </VehiclePhotoViewer>
 </div>
 
