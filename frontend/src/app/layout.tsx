@@ -3,6 +3,11 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  icons: {
+    icon: [{ url: "/favicon.png?v=fe91dd984f", type: "image/png", sizes: "1254x1254" }],
+    shortcut: "/favicon.ico?v=fe91dd984f",
+    apple: [{ url: "/apple-touch-icon.png?v=fe91dd984f", sizes: "180x180", type: "image/png" }],
+  },
   metadataBase: new URL("https://movaracarhire.com"),
   title: {
     default: "Car Hire in Kenya | Self-Drive Cars in Nairobi | Movara Car Hire",
