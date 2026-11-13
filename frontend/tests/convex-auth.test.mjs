@@ -24,7 +24,7 @@ test("new password limits", () => {
   validateNewPassword("a".repeat(12));
 });
 test("customer signup input cannot choose permissions or verified status", () => {
-  assert.deepEqual(passwordProfile({ email: "customer@example.com", phone: "+447700900123", flow: "signUp", roles: ["owner"], emailVerificationTime: 1, userId: "other-user" }, undefined), { email: "customer@example.com", phone: "+447700900123" });
+  assert.deepEqual(passwordProfile({ email: "customer@example.com", phone: "+447700900123", flow: "signUp", referralSource: "Facebook", referralDetails: "Nairobi travel group", roles: ["owner"], emailVerificationTime: 1, userId: "other-user" }, undefined), { email: "customer@example.com", phone: "+447700900123", referralSource: "Facebook", referralDetails: "Nairobi travel group" });
 });
 test("owner signup is blocked without configured and correct setup secret", () => {
   for (const secret of [undefined, "private-setup-code"]) assert.throws(() => passwordProfile({ email: OWNER_EMAIL, flow: "signUp", setupCode: "wrong-code" }, secret));
@@ -61,4 +61,12 @@ test("only the designated active owner can perform admin actions", async () => {
 test("public customer portal does not accept owner sign-in", () => {
   assert.throws(() => passwordProfile({ email: OWNER_EMAIL, flow: "signIn", portal: "customer" }, undefined), /private admin/);
   assert.throws(() => passwordProfile({ email: OWNER_EMAIL, flow: "signIn" }, undefined), /private admin/);
+});
+
+test("referral answers are required only for customer registration", () => {
+  const signup = { email: "new@example.com", phone: "+254716741039", flow: "signUp" };
+  assert.throws(() => passwordProfile(signup, undefined), /where you heard/);
+  assert.throws(() => passwordProfile({ ...signup, referralSource: "Reddit" }, undefined), /where you heard/);
+  assert.deepEqual(passwordProfile({ ...signup, referralSource: "Reddit", referralDetails: " r/Kenya " }, undefined), { email: "new@example.com", phone: "+254716741039", referralSource: "Reddit", referralDetails: "r/Kenya" });
+  assert.deepEqual(passwordProfile({ email: "new@example.com", flow: "signIn", referralSource: "invalid", referralDetails: "ignored" }, undefined), { email: "new@example.com" });
 });

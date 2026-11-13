@@ -37,7 +37,7 @@ try {
    assert.ok(html.includes('Toyota Prado'));
    assert.ok(html.includes('Jade Plaza'));
    assert.ok(html.includes('All our vehicles are based in Nairobi'));
-   assert.ok(html.includes('Where did you hear about us?'));
+   assert.ok(!html.includes('Where did you hear about us?'), 'Referral questions belong to registration, not enquiries');
    assert.ok(html.includes('tel:+254716741039'));
    assert.ok(!html.includes('Loading contact form'));
   }

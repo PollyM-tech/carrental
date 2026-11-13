@@ -1,6 +1,6 @@
 # SEO rollout
 
-Deploy frontend and Convex changes together: the forms send the new optional referral-source field. Existing records remain compatible.
+Deploy frontend and Convex changes together: registration now collects and saves required referral answers. Google registrations complete these once after returning from Google. Existing customer logins do not request them; booking requests reuse the saved account answers. Existing records remain compatible.
 
 ## Search Console
 

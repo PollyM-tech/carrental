@@ -1,3 +1,4 @@
+import { signupReferral } from "./referral.ts";
 export const OWNER_EMAIL = "movaracarhire@gmail.com";
 
 export function normaliseEmail(value: unknown): string {
@@ -18,7 +19,8 @@ export function passwordProfile(params: Record<string, unknown>, ownerSetupSecre
     throw new Error("Owner registration requires the private setup code.");
   }
   if (params.flow === "signUp") {
-    if (params.phone || email !== OWNER_EMAIL) return { email, phone: normalisePhone(params.phone) };
+    if (email !== OWNER_EMAIL) return { email, phone: normalisePhone(params.phone), ...signupReferral(params) };
+    if (params.phone) return { email, phone: normalisePhone(params.phone) };
   }
   return { email };
 }

@@ -17,7 +17,7 @@ test("phone validation rejects bad input and accepts E164 length boundaries", ()
   assert.equal(normalisePhone("+123456789012345"), "+123456789012345");
 });
 test("signup stores the international phone but never verification flags", () => {
-  assert.deepEqual(passwordProfile({ email: "CUSTOMER@example.com", phone: "+1 (202) 555-0123", flow: "signUp", phoneVerificationTime: 1, roles: ["owner"] }, undefined), { email: "customer@example.com", phone: "+12025550123" });
+  assert.deepEqual(passwordProfile({ email: "CUSTOMER@example.com", phone: "+1 (202) 555-0123", flow: "signUp", referralSource: "Facebook", referralDetails: "Nairobi travel group", phoneVerificationTime: 1, roles: ["owner"] }, undefined), { email: "customer@example.com", phone: "+12025550123", referralSource: "Facebook", referralDetails: "Nairobi travel group" });
   assert.throws(() => passwordProfile({ email: "customer@example.com", flow: "signUp" }, undefined));
 });
 test("existing users can sign in without entering a phone again", () => {

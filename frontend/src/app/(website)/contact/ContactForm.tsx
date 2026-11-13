@@ -20,7 +20,6 @@ import {
   Send,
 } from "lucide-react";
 
-import ReferralSource from "@/components/shared/ReferralSource";
 
 type InquiryType = "general" | "booking";
 
@@ -34,7 +33,6 @@ type ContactForm = {
   pickupLocation: string;
   returnLocation: string;
   sameLocation: boolean;
-  referralSource: string;
   message: string;
 };
 
@@ -72,7 +70,6 @@ export default function ContactFormContent({
     pickupLocation: "",
     returnLocation: "",
     sameLocation: true,
-    referralSource: "",
     message: selectedService ? `I would like to enquire about ${selectedService}.` : "",
   });
 
@@ -487,8 +484,6 @@ export default function ContactFormContent({
                       )}
                     </div>
                   )}
-
-                  <ReferralSource value={form.referralSource} onChange={value => updateField("referralSource", value)} />
                   {/* Message */}
                   <label className={`${labelClass} mt-5`}>
                     {inquiryType === "general"
@@ -594,7 +589,6 @@ export default function ContactFormContent({
                     </>
                   )}
 
-                  {form.referralSource && <ReviewRow label="Where did you hear about us?" value={form.referralSource} />}
                   {form.message && (
                     <ReviewRow
                       label="Message"

@@ -24,6 +24,7 @@ compile(join(root,'convex'));
 const enquiries=await import(pathToFileURL(join(compiled,'enquiries.js')));
 const handovers=await import(pathToFileURL(join(compiled,'handovers.js')));
 const privacy=await import(pathToFileURL(join(compiled,'dataRequests.js')));
+const accounts=await import(pathToFileURL(join(compiled,'accounts.js')));
 const bookings=await import(pathToFileURL(join(compiled,'bookingRequests.js')));
 const care=await import(pathToFileURL(join(compiled,'customerCare.js')));
 const vehicles=await import(pathToFileURL(join(compiled,'vehicles.js')));
@@ -105,7 +106,20 @@ test('full in-person booking, approval and return flow enforces ownership and st
  await db.insert('staffMemberships',{userId:other,roles:['owner'],active:true});
  const car=await db.insert('movaraVehicles',{name:'Test',category:'SUV',registration:'TEST123',archived:false,published:true,status:'available',insuranceExpiresOn:date(365),inspectionExpiresOn:date(365),pricePerDay:3500,seats:5,transmission:'Automatic',fuel:'Petrol',brand:'Test',model:'Test',location:'Nairobi',description:'',isFeatured:true});
  const request=(who,start=10)=>run(bookings,'create',who,{vehicleId:car,requestKey:crypto.randomUUID(),pickupDate:date(start),returnDate:date(start+3),pickupLocation:'Nairobi',phone:'+447700900123'});
+ await db.patch(customer,{signupReferralRequired:true});
+ await assert.rejects(request(customer),/registration/);
+ await assert.rejects(run(accounts,'completeSignupReferral',customer,{referralSource:'Reddit',referralDetails:' '}),/where you heard/);
+ await run(accounts,'completeSignupReferral',customer,{referralSource:'Reddit',referralDetails:' r/Kenya '});
+ assert.equal((await db.get(customer)).signupReferralRequired,false);
+ assert.equal((await db.get(customer)).referralDetails,'r/Kenya');
+ await run(accounts,'completeSignupReferral',customer,{referralSource:'Facebook',referralDetails:'Do not overwrite registration'});
+ assert.equal((await db.get(customer)).referralSource,'Reddit');
+ await assert.rejects(run(accounts,'signupReferrals',other),/permission/);
+ assert.ok((await run(accounts,'signupReferrals',owner)).some(row=>row.id===customer && row.referralDetails==='r/Kenya'));
  const first=await request(customer), overlap=await request(other), later=await request(other,20);
+ assert.equal((await db.get(first)).referralSource,'Reddit');
+ assert.equal((await db.get(first)).referralDetails,'r/Kenya');
+
  assert.equal((await run(vehicles,'publicList',null,{})).length,1); // Pending requests do not hide a car.
  const contacts={fullName:'Test Customer',nextOfKinName:'Test Kin',nextOfKinPhone:'+12025550123',guarantorName:'Test Guarantor',guarantorPhone:'+447700900123',consentToContacts:true};
  await assert.rejects(run(care,'submit',other,{bookingId:first,...contacts}),/cannot be changed/);

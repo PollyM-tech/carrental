@@ -50,7 +50,10 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   callbacks: {
     async redirect({ redirectTo }) { return authRedirect(redirectTo, process.env.SITE_URL!, process.env.MOVARA_AUTH_LOCAL_ORIGIN); },
     async beforeSessionCreation(ctx, { userId }) { await prepareCredentialGuard(ctx as MutationCtx, userId); },
-    async afterUserCreatedOrUpdated(ctx, { userId, type, provider }) {
+    async afterUserCreatedOrUpdated(ctx, { userId, type, provider, existingUserId }) {
+      if (type === "oauth" && provider.id === "google" && existingUserId === null) {
+        await (ctx as MutationCtx).db.patch(userId, { signupReferralRequired: true });
+      }
       if (type !== "credentials" || provider.id !== "password") return;
       const db = (ctx as MutationCtx).db;
       const user = await db.get(userId);

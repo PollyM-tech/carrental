@@ -1,4 +1,3 @@
-import { validateReferralSource } from "./lib/referral";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireRole, requireUser } from "./lib/permissions";
@@ -21,18 +20,20 @@ export const mine = query({
   },
 });
 export const create = mutation({
-  args: { referralSource: v.optional(v.string()), requestKey: v.string(), vehicleId: v.id("movaraVehicles"), pickupDate: v.string(), returnDate: v.string(), pickupLocation: v.string(), phone: v.string(), customerName: v.optional(v.string()) },
+  args: { referralSource: v.optional(v.string()), referralDetails: v.optional(v.string()), requestKey: v.string(), vehicleId: v.id("movaraVehicles"), pickupDate: v.string(), returnDate: v.string(), pickupLocation: v.string(), phone: v.string(), customerName: v.optional(v.string()) },
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     if (!/^[a-zA-Z0-9-]{16,64}$/.test(args.requestKey)) throw new Error("Refresh this booking form and retry.");
     const rentalDays = bookingDates(args.pickupDate, args.returnDate);
     const pickupLocation = bookingText(args.pickupLocation, "Pickup location", 200);
     const phone = normalisePhone(args.phone);
-    const referralSource = validateReferralSource(args.referralSource);
+    if (user.signupReferralRequired) throw new Error("Complete your account registration first.");
+    const referralSource = user.referralSource;
+    const referralDetails = user.referralDetails;
     const customerName = args.customerName?.trim() ? requiredText(args.customerName, "Customer name", 120) : undefined;
     const existing = await ctx.db.query("movaraBookingRequests").withIndex("by_customer_key", q => q.eq("customerId", user._id).eq("requestKey", args.requestKey)).unique();
     if (existing) {
-      if (existing.vehicleId !== args.vehicleId || existing.pickupDate !== args.pickupDate || existing.returnDate !== args.returnDate || existing.pickupLocation !== pickupLocation || existing.phone !== phone || existing.customerName !== customerName || existing.referralSource !== referralSource) throw new Error("This request was already received with different details. Refresh your requests before submitting another one.");
+      if (existing.vehicleId !== args.vehicleId || existing.pickupDate !== args.pickupDate || existing.returnDate !== args.returnDate || existing.pickupLocation !== pickupLocation || existing.phone !== phone || existing.customerName !== customerName || existing.referralSource !== referralSource || existing.referralDetails !== referralDetails) throw new Error("This request was already received with different details. Refresh your requests before submitting another one.");
       return existing._id;
     }
     const vehicle = await ctx.db.get(args.vehicleId);
@@ -45,7 +46,7 @@ export const create = mutation({
     const dailyRateKes = vehicle.pricePerDay;
     const estimatedRentalKes = dailyRateKes === undefined ? undefined : rentalEstimate(dailyRateKes, rentalDays);
     if (phone !== user.phone) await ctx.db.patch(user._id, { phone, phoneVerificationTime: undefined });
-    const id = await ctx.db.insert("movaraBookingRequests", { customerId: user._id, customerName, referralSource, requestKey: args.requestKey, vehiclePreference, vehicleId: vehicle._id, dailyRateKes, estimatedRentalKes, pickupDate: args.pickupDate, returnDate: args.returnDate, rentalDays, pickupLocation, phone, status: "requested", updatedAt: Date.now() });
+    const id = await ctx.db.insert("movaraBookingRequests", { customerId: user._id, customerName, referralSource, referralDetails, requestKey: args.requestKey, vehiclePreference, vehicleId: vehicle._id, dailyRateKes, estimatedRentalKes, pickupDate: args.pickupDate, returnDate: args.returnDate, rentalDays, pickupLocation, phone, status: "requested", updatedAt: Date.now() });
     await ctx.db.insert("accessEvents", { subjectId: user._id, actorId: user._id, action: "booking.requested", occurredAt: Date.now() });
     return id;
   },

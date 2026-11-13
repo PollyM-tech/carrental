@@ -1,7 +1,7 @@
 "use client";
 import { trackConversion } from "@/lib/analytics";
 import { bookingWhatsAppUrl } from "@/lib/booking-whatsapp";
-import ReferralSource from "@/components/shared/ReferralSource";
+import SignupReferralCompletion from "@/components/auth/SignupReferralCompletion";
 import CustomerData from "@/components/privacy/CustomerData";
 import { Suspense, useRef, useState } from "react";
 import { useAuthActions } from "@convex-dev/auth/react";
@@ -32,7 +32,6 @@ function BookingWorkspace() {
   const [phoneOverride, setPhone] = useState<string | null>(null);
   const [vehicleOverride, setVehicle] = useState<string | null>(null);
   const vehicle = vehicleOverride ?? searchParams.get("car") ?? ""; const [pickup, setPickup] = useState(""); const [returned, setReturned] = useState(""); const [location, setLocation] = useState("Nairobi");
-  const [referralSource, setReferralSource] = useState("");
   const [busy, setBusy] = useState(false); const [message, setMessage] = useState("");
   const [bookingSubmitting, setBookingSubmitting] = useState(false);
   const bookingSubmitPending = useRef(false);
@@ -46,6 +45,7 @@ function BookingWorkspace() {
   async function run(action: () => Promise<void>) { setBusy(true); setMessage(""); try { await action(); } catch(e) { setMessage(e instanceof Error ? e.message : "Please retry."); } finally { setBusy(false); } }
   if (account === undefined) return <main className="p-10 text-center">Opening your booking dashboard…</main>;
   if (!account) return <main className="p-10"><Link href="/sign-in" className="underline">Sign in to view your bookings</Link></main>;
+  if (account.signupReferralRequired) return <main className="mx-auto max-w-xl px-4 py-10"><SignupReferralCompletion /></main>;
   return <main className="mx-auto max-w-5xl space-y-8 px-4 pt-8 pb-28">
     <div className="flex flex-wrap items-center justify-between gap-4"><div><Link href="/" className="inline-flex items-center gap-2 font-semibold text-orange-700 underline underline-offset-4"><span aria-hidden="true">←</span> Back to website</Link><h1 className="mt-2 text-3xl font-bold text-[#0B1C4D]">Your booking dashboard</h1><p className="mt-2 break-all text-sm text-slate-600">{account.email}</p></div><button disabled={actionBusy} className="underline" onClick={() => void run(async () => { await signOut(); router.replace("/sign-in"); })}>Sign out</button></div>
     <Message message={message} />
@@ -59,8 +59,8 @@ function BookingWorkspace() {
         if (!chosen) throw new Error("Choose an available vehicle.");
         const internationalPhone = normalisePhone(phone); bookingDates(pickup, returned);
         requestKey.current ??= crypto.randomUUID();
-        const reference = await create({ customerName, requestKey: requestKey.current, vehicleId: vehicle as Id<"movaraVehicles">, pickupDate: pickup, returnDate: returned, pickupLocation: location, referralSource, phone: internationalPhone });
-        const url = bookingWhatsAppUrl({ reference, name: customerName, email: account.email, phone: internationalPhone, vehicle: chosen.name, pickupDate: pickup, returnDate: returned, pickupLocation: location, referralSource });
+        const reference = await create({ customerName, requestKey: requestKey.current, vehicleId: vehicle as Id<"movaraVehicles">, pickupDate: pickup, returnDate: returned, pickupLocation: location, phone: internationalPhone });
+        const url = bookingWhatsAppUrl({ reference, name: customerName, email: account.email, phone: internationalPhone, vehicle: chosen.name, pickupDate: pickup, returnDate: returned, pickupLocation: location, referralSource: account.referralSource, referralDetails: account.referralDetails });
       trackConversion("booking_request_saved");
         setSavedBooking({ reference, url });
         requestKey.current = null; setVehicle(""); setPickup(""); setReturned("");
@@ -74,7 +74,6 @@ function BookingWorkspace() {
       {vehicles?.length === 0 && <p>No vehicles are currently published. Please contact Movara for assistance.</p>}
       {chosen && chosen.pricePerDay !== null && <p className="text-sm text-slate-600">Listed daily rate: KES {chosen.pricePerDay.toLocaleString()}. Availability is checked for your dates when you submit. Final rental terms are confirmed by our team; rental payment and the security deposit are collected only after all checks and handover approvals are complete.</p>}
       <div className="grid gap-4 sm:grid-cols-2"><Field required type="date" label="Pickup date" value={pickup} onChange={setPickup} /><Field required type="date" label="Return date" value={returned} onChange={setReturned} /></div>
-      <ReferralSource value={referralSource} onChange={value => { setReferralSource(value); requestKey.current = null; }} />
       <Field required label="Pickup location in Kenya" value={location} onChange={setLocation} />
       <p className="text-sm text-slate-600">Self-drive drivers must be 22+ and have held a licence for at least two years. Document checks, guarantor/next-of-kin details and a manually signed contract are required before handover. Cross-border travel is unavailable.</p><p className="text-xs text-slate-500">Do not enter ID/licence numbers or payment codes in these fields. No payment is requested at this stage.</p><button type="submit" disabled={bookingSubmitting} aria-busy={bookingSubmitting} className={buttonStyle}>{bookingSubmitting ? "Submitting…" : "Submit request & open WhatsApp"}</button></fieldset>
     </form>

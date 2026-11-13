@@ -6,6 +6,12 @@ export const staffRole = v.union(v.literal("owner"), v.literal("admin"), v.liter
 
 export default defineSchema({
   ...authTables,
+  users: defineTable({
+    ...authTables.users.validator.fields,
+    referralSource: v.optional(v.string()),
+    referralDetails: v.optional(v.string()),
+    signupReferralRequired: v.optional(v.boolean()),
+  }).index("email", ["email"]).index("phone", ["phone"]),
   movaraCredentialGuards: defineTable({ userId: v.id("users"), secretHash: v.string(), changedAt: v.number() }).index("by_user", ["userId"]),
   movaraSessionActivity: defineTable({ sessionId: v.id("authSessions"), lastActiveAt: v.number() }).index("by_session", ["sessionId"]),
   movaraLoginGuards: defineTable({ key: v.string(), failures: v.number(), lockedUntil: v.optional(v.number()), pending: v.array(v.object({ id: v.string(), expiresAt: v.number() })) }).index("by_key", ["key"]),
@@ -29,7 +35,7 @@ export default defineSchema({
   }).index("by_vehicle", ["vehicleId"]),
   movaraBookingRequests: defineTable({
     customerId: v.id("users"),
-    referralSource: v.optional(v.string()),
+    referralSource: v.optional(v.string()), referralDetails: v.optional(v.string()),
     requestKey: v.string(),
     vehiclePreference: v.string(),
     vehicleId: v.optional(v.id("movaraVehicles")),
@@ -64,7 +70,7 @@ export default defineSchema({
     reason: v.string(), updatedAt: v.number(), updatedBy: v.id("users"),
   }).index("by_customer", ["customerId"]),
   movaraEnquiries: defineTable({
-    referralSource: v.optional(v.string()),
+    referralSource: v.optional(v.string()), referralDetails: v.optional(v.string()),
     requestKey: v.string(), kind: v.union(v.literal("booking"), v.literal("general")), name: v.string(), phone: v.string(), email: v.string(),
     vehicle: v.string(), pickupDate: v.string(), returnDate: v.string(), pickupLocation: v.string(), returnLocation: v.string(), message: v.string(),
     status: v.union(v.literal("new"), v.literal("contacted"), v.literal("closed")), updatedAt: v.number(),

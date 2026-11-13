@@ -11,6 +11,7 @@ import { siteConfig } from "@/config/site";
 import { api } from "../../../convex/_generated/api";
 
 export default function ConvexDashboard() {
+  const referrals = useQuery(api.accounts.signupReferrals);
   const overview = useQuery(api.accounts.adminOverview);
   const { signOut } = useAuthActions(); const router = useRouter();
   const [busy, setBusy] = useState(false); const [message, setMessage] = useState("");
@@ -28,6 +29,7 @@ export default function ConvexDashboard() {
     <Link href="/dashboard/bookings" className="inline-block rounded-xl bg-orange-600 px-5 py-3 font-bold text-white">Review booking requests</Link>
     <div className="flex flex-wrap gap-4"><Link href="/dashboard/cars" className="rounded-xl border bg-white px-5 py-3 font-bold">Add cars, photos &amp; rates</Link><Link href="/dashboard/fleet" className="rounded-xl border bg-white px-5 py-3 font-bold">Fleet compliance and maintenance</Link></div>
     <section className="space-y-4 rounded-2xl border bg-white p-6"><h2 className="text-xl font-bold">Confirmed rental policies</h2><ul className="list-disc space-y-3 pl-5 text-sm">{Object.entries(rentalTerms).map(([key, value]) => <li key={key}>{value}</li>)}</ul></section>
+    <section className="space-y-4 rounded-2xl border bg-white p-6"><h2 className="text-xl font-bold">How new customers found us</h2><p className="text-sm text-slate-600">Referral answers collected during account registration, from the latest 100 accounts.</p>{referrals === undefined ? <p>Loading referral answers…</p> : !referrals.length ? <p>No registration referral answers yet.</p> : referrals.map(row => <article key={row.id} className="rounded-xl border p-4 text-sm"><p className="font-semibold">{row.name || row.email}</p>{row.name && <p>{row.email}</p>}<p className="mt-2">Source: {row.referralSource}</p><p className="whitespace-pre-wrap break-words">{row.referralDetails}</p></article>)}</section>
     <section className="rounded-2xl border bg-white p-6"><h2 className="font-bold">Business contact</h2><p className="mt-2">{siteConfig.email}</p><p>{siteConfig.phone}</p></section>
   </Workspace>;
 }
