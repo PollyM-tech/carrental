@@ -1,3 +1,5 @@
+import { pageMetadata } from "@/lib/seo";
+export const metadata = pageMetadata('Car Hire Services in Kenya', 'Explore self-drive, airport collection, corporate and long-term car rental with Movara. Confirm rates and handover arrangements for your journey.', '/services');
 
 import Image from "next/image";
 import Link from "next/link";
@@ -154,10 +156,10 @@ export default function ServicesPage() {
                   </p>
 
                   <Link
-                    href="/contact"
+                    href={`/services/${service.slug}`}
                     className="mt-4 inline-flex min-h-9 items-center gap-1.5 text-[13px] font-medium text-[#E86D00] hover:text-[#0B1C4D]"
                   >
-                    Inquire Now
+                    View Service Details
                     <ArrowRight
                       size={15}
                       aria-hidden="true"

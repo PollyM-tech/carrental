@@ -20,11 +20,11 @@
     "admin:password": "npm run convex:sync && node scripts/set-admin-password.mjs",
     "convex:sync": "npm run convex:dev -- --once --typecheck enable --tail-logs disable",
     "test:connection": "node --experimental-strip-types tests/connection-errors.test.mjs",
-    "test:privacy": "node --experimental-strip-types tests/cookie-consent.test.mjs",
+    "test:privacy": "node --experimental-strip-types tests/cookie-consent.test.mjs && node tests/analytics.test.mjs",
     "check": "npm run typecheck && npm run lint && npm run test:auth && npm run test:security && npm run test:vehicles && npm run test:rentals && npm run test:workflow && npm run test:connection && npm run test:privacy && npm run test:whatsapp",
     "admin:password:prod": "node scripts/set-admin-password.mjs --prod",
     "test:smoke": "node tests/production-smoke.mjs",
-    "test:whatsapp": "node --experimental-strip-types tests/booking-whatsapp.test.mjs"
+    "test:whatsapp": "node --experimental-strip-types tests/booking-whatsapp.test.mjs && node --experimental-strip-types tests/referral-source.test.mjs"
   },
   "dependencies": {
     "@auth/core": "0.41.3",

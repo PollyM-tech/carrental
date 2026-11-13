@@ -13,9 +13,10 @@ export default function WebsiteLayout({
     <div className="flex min-h-screen flex-col">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
         "@context": "https://schema.org", "@type": "AutoRental", name: siteConfig.businessName,
-        url: "https://movaracarhire.com", image: "https://movaracarhire.com/logo.png",
-        telephone: ["+254716741039", siteConfig.secondaryPhoneInternational], email: siteConfig.email,
-        address: { "@type": "PostalAddress", addressLocality: "Nairobi", addressCountry: "KE" },
+        url: "https://www.movaracarhire.com", image: "https://www.movaracarhire.com/logo.png",
+        telephone: ["+254716741039"], email: siteConfig.email,
+        address: { "@type": "PostalAddress", streetAddress: siteConfig.streetAddress, addressLocality: "Nairobi", addressCountry: "KE" },
+        hasMap: siteConfig.mapUrl,
         areaServed: { "@type": "Country", name: "Kenya" },
         priceRange: "KES", sameAs: [`https://wa.me/${siteConfig.whatsapp}`],
       }) }} />

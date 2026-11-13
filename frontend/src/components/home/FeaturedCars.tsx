@@ -17,8 +17,10 @@ import {
 
 import { useCatalogue } from "@/lib/use-catalogue";
 
-export default function FeaturedCars() {
-  const { cars, error, loading } = useCatalogue();
+import type { Car } from "@/data/cars";
+
+export default function FeaturedCars({ initialCars }: { initialCars?: Car[] }) {
+  const { cars, error, loading } = useCatalogue(initialCars);
   const featuredCars = cars.filter(car => car.isFeatured);
   return (
     <section
@@ -44,8 +46,8 @@ export default function FeaturedCars() {
           </h2>
 
           <p className="mx-auto mt-3 max-w-xl text-[14px] leading-6 text-slate-600">
-            Find a suitable self-drive vehicle for your
-            next journey with Movara Car Hire.
+            Explore our real, Nairobi-based fleet for your next journey.
+            Collection is arranged from Nairobi with Movara Car Hire.
           </p>
         </div>
 
@@ -90,7 +92,7 @@ export default function FeaturedCars() {
                     src={car.image}
                     alt={car.name}
                     fill
-                    loading="eager"
+                    loading="lazy"
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                     className="object-cover transition-transform duration-300 group-hover:scale-105"
                   />

@@ -1,5 +1,4 @@
 "use client";
-import SecondaryContact from "@/components/shared/SecondaryContact";
 import { useRef, useState } from "react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useQuery } from "convex/react";
@@ -19,7 +18,7 @@ export default function ForgotPassword({ portal, onBack }: { portal: "customer" 
   const pending = useRef(false);
   const [message, setMessage] = useState("");
   return <section className="space-y-4 rounded-2xl border bg-white p-6"><h2 className="text-xl font-bold text-[#0B1C4D]">Reset your password</h2><Message message={message} />
-    {available === undefined ? <p>Checking password recovery…</p> : !available ? <p className="text-sm text-slate-600">Email password recovery is not available yet. <a className="font-semibold underline" href="https://wa.me/254716741039" target="_blank" rel="noopener noreferrer">Contact Movara for help</a> or call <SecondaryContact />. Never send your password or reset code over WhatsApp.</p> : <form className="space-y-4" onSubmit={async event => {
+    {available === undefined ? <p>Checking password recovery…</p> : !available ? <p className="text-sm text-slate-600">Email password recovery is not available yet. <a className="font-semibold underline" href="https://wa.me/254716741039" target="_blank" rel="noopener noreferrer">Contact Movara for help</a>. Never send your password or reset code over WhatsApp.</p> : <form className="space-y-4" onSubmit={async event => {
       event.preventDefault();
       if (pending.current) return;
       if (sentTo && password !== confirmation) { setMessage("Your passwords do not match."); return; }

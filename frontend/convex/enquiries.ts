@@ -1,3 +1,4 @@
+import { validateReferralSource } from "./lib/referral";
 import { v, ConvexError } from "convex/values";
 import { action, internalMutation, mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
@@ -5,8 +6,8 @@ import { internal } from "./_generated/api";
 import { normaliseEmail, normalisePhone } from "./lib/identity";
 import { calendarDate, nairobiToday, requiredText } from "./lib/vehicle_rules";
 import { requireRole } from "./lib/permissions";
-const fields = { requestKey: v.string(), kind: v.union(v.literal("booking"), v.literal("general")), name: v.string(), phone: v.string(), email: v.string(), vehicle: v.string(), pickupDate: v.string(), returnDate: v.string(), pickupLocation: v.string(), returnLocation: v.string(), message: v.string(), website: v.optional(v.string()) };
-type EnquiryDetails = { requestKey: string; kind: "booking" | "general"; name: string; phone: string; email: string; vehicle: string; pickupDate: string; returnDate: string; pickupLocation: string; returnLocation: string; message: string };
+const fields = { referralSource: v.optional(v.string()), requestKey: v.string(), kind: v.union(v.literal("booking"), v.literal("general")), name: v.string(), phone: v.string(), email: v.string(), vehicle: v.string(), pickupDate: v.string(), returnDate: v.string(), pickupLocation: v.string(), returnLocation: v.string(), message: v.string(), website: v.optional(v.string()) };
+type EnquiryDetails = { referralSource?: string; requestKey: string; kind: "booking" | "general"; name: string; phone: string; email: string; vehicle: string; pickupDate: string; returnDate: string; pickupLocation: string; returnLocation: string; message: string };
 function pickupTimestamp(value: string) {
   calendarDate(value.slice(0, 10));
   if (!/^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d$/.test(value)) throw new Error("Choose a valid Kenya pickup/return date and time.");
@@ -25,7 +26,7 @@ export const submit = action({ args: fields, handler: async (ctx, args): Promise
       if (args.pickupDate.slice(0, 10) < nairobiToday() || end <= start) throw new Error("Pickup must be today or later, and return must be after pickup.");
       requiredText(args.pickupLocation, "Pickup location", 300); requiredText(args.returnLocation, "Return location", 300);
     } else requiredText(args.message, "Message", 2000);
-    details = { requestKey: args.requestKey, kind: args.kind, name, phone, email, vehicle: args.vehicle.trim(), pickupDate: args.kind === "booking" ? args.pickupDate : "", returnDate: args.kind === "booking" ? args.returnDate : "", pickupLocation: args.kind === "booking" ? args.pickupLocation.trim() : "", returnLocation: args.kind === "booking" ? args.returnLocation.trim() : "", message: args.message.trim() };
+    details = { referralSource: validateReferralSource(args.referralSource), requestKey: args.requestKey, kind: args.kind, name, phone, email, vehicle: args.vehicle.trim(), pickupDate: args.kind === "booking" ? args.pickupDate : "", returnDate: args.kind === "booking" ? args.returnDate : "", pickupLocation: args.kind === "booking" ? args.pickupLocation.trim() : "", returnLocation: args.kind === "booking" ? args.returnLocation.trim() : "", message: args.message.trim() };
   } catch (error) { throw new ConvexError({ code: "INVALID_INPUT", message: error instanceof Error ? error.message : "Check your enquiry details." }); }
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(details.phone));
   const phoneKey = Array.from(new Uint8Array(digest), value => value.toString(16).padStart(2, "0")).join("");

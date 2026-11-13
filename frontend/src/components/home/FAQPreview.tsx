@@ -35,7 +35,7 @@ const faqs = [
     id: "payment",
     question: "How can I pay for my rental?",
     answer:
-      rentalTerms.payment + " Payments will use an M-Pesa Buy Goods till. Where STK Push is available, you can use the prompt; if it fails, pay manually and submit your M-Pesa transaction code for verification. A submitted code does not confirm payment. Our team will confirm the till details before you pay.",
+      rentalTerms.payment + " Our team confirms the payment arrangements after clearance. No online payment is requested when submitting a booking enquiry.",
   },
   {
     id: "deposit",
@@ -154,8 +154,8 @@ export default function FAQPreview() {
                   </button>
                 </h3>
 
-                {isOpen && (
-                  <div
+                <div
+                    hidden={!isOpen}
                     id={answerId}
                     className="border-t border-slate-100 px-4 pb-4 pt-3 sm:px-5"
                   >
@@ -163,7 +163,6 @@ export default function FAQPreview() {
                       {faq.answer}
                     </p>
                   </div>
-                )}
               </article>
             );
           })}

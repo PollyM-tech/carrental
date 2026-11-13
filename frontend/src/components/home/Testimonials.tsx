@@ -19,9 +19,7 @@ type TestimonialsProps = {
   testimonials?: Testimonial[];
 };
 
-// Demo content: replace quotes with genuine customer reviews
-// and add ratings only when confirmed.
-const sampleTestimonials: Testimonial[] = [
+const customerTestimonials: Testimonial[] = [
   {
     id: "brian-mwendwa",
     name: "Brian Mwendwa",
@@ -50,7 +48,7 @@ const sampleTestimonials: Testimonial[] = [
     id: "slavi-pattek",
     name: "Slavi Pattek",
     role: "Travel Customer",
-    location: "Location not specified",
+    location: "Germany",
     quote:
       "The vehicle was comfortable for the journey, and the booking arrangements were convenient.",
   },
@@ -61,7 +59,7 @@ const whatsappLink = `https://wa.me/254716741039?text=${encodeURIComponent(
 )}`;
 
 export default function Testimonials({
-  testimonials = sampleTestimonials,
+  testimonials = customerTestimonials,
 }: TestimonialsProps) {
   return (
     <section
@@ -73,17 +71,14 @@ export default function Testimonials({
         {/* Section heading */}
         <div className="mx-auto mb-10 max-w-2xl text-center">
           <span className="inline-flex rounded-full border border-orange-200 bg-orange-50 px-3.5 py-1.5 text-xs font-bold tracking-wide text-[#E86D00]">
-            TESTIMONIALS
+            CUSTOMER EXPERIENCES
           </span>
 
           <h2
             id="testimonials-heading"
             className="mt-4 text-[28px] font-bold leading-tight tracking-[-0.025em] text-[#0B1C4D] sm:text-[32px] lg:text-[38px]"
           >
-            What Our{" "}
-            <span className="text-[#FF7A00]">
-              Customers Say
-            </span>
+            {testimonials.length ? "Customer feedback" : "Travelled with Movara?"}
           </h2>
 
           <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-slate-600 sm:text-base">

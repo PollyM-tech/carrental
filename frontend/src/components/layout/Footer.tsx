@@ -1,3 +1,4 @@
+import { siteConfig } from "@/config/site";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -8,13 +9,12 @@ import {
   Phone,
 } from "lucide-react";
 
-import { siteConfig } from "@/config/site";
 import { services } from "@/data/services";
 
 const BUSINESS_NAME = "Movara Car Hire";
 const PHONE_NUMBER = "+254 716 741 039";
 const WHATSAPP_NUMBER = "254716741039";
-const LOCATION = "Nairobi, Kenya";
+const LOCATION = siteConfig.location;
 
 const quickLinks = [
   { label: "Home", href: "/" },
@@ -122,7 +122,7 @@ export default function Footer() {
               {services.map((service) => (
                 <Link
                   key={service.slug}
-                  href={`/services#${service.slug}`}
+                  href={`/services/${service.slug}`}
                   className="text-[13px] leading-6 text-slate-300 transition-colors hover:text-orange-300"
                 >
                   {service.title}
@@ -150,18 +150,7 @@ export default function Footer() {
 
                 <span>{PHONE_NUMBER}</span>
               </a>
-<a
-                href="tel:+254706040984"
-                className="flex items-start gap-3 text-[13px] text-slate-300 transition-colors hover:text-orange-300"
-              >
-                <Phone
-                  size={17}
-                  className="mt-0.5 shrink-0 text-[#FF7A00]"
-                  aria-hidden="true"
-                />
 
-                <span>{siteConfig.secondaryPhone}</span>
-              </a>
 
               <div className="flex items-start gap-3 text-[13px] text-slate-300">
                 <MapPin
@@ -170,7 +159,7 @@ export default function Footer() {
                   aria-hidden="true"
                 />
 
-                <span>{LOCATION}</span>
+                <a href={siteConfig.mapUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-orange-300">{LOCATION}</a>
               </div>
 
               <a
@@ -210,7 +199,7 @@ export default function Footer() {
           </p>
 
           <p>
-            <Link href="/privacy" className="underline hover:text-white">Privacy and cookies</Link>
+            <Link href="/rental-terms" className="mr-4 underline hover:text-white">Rental terms</Link><Link href="/privacy" className="underline hover:text-white">Privacy and cookies</Link>
           </p>
         </div>
       </div>

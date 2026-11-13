@@ -169,34 +169,29 @@ export default function AboutUs() {
         <div className="mt-10 grid gap-4 border-t border-slate-200 pt-8 md:grid-cols-2">
           <article className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
             <span className="text-[11px] font-bold uppercase tracking-wide text-[#E86D00]">
-              OUR MISSION
+              CLEAR RENTAL PROCESS
             </span>
 
             <h3 className="mt-2 text-[17px] font-bold text-[#0B1C4D]">
-              Making Travel Easier
+              Confirm the terms before you commit
             </h3>
 
             <p className="mt-2 text-[14px] leading-6 text-slate-600">
-              To provide convenient, comfortable, and
-              dependable self-drive car hire services
-              that help customers travel with confidence.
+              Compare listed daily rates, choose your dates and ask our team to confirm availability, deposit and rental terms before payment.
             </p>
           </article>
 
           <article className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
             <span className="text-[11px] font-bold uppercase tracking-wide text-[#E86D00]">
-              OUR VISION
+              FLEXIBLE HANDOVER
             </span>
 
             <h3 className="mt-2 text-[17px] font-bold text-[#0B1C4D]">
-              A Trusted Car Hire Brand
+              Plan your pickup with our team
             </h3>
 
             <p className="mt-2 text-[14px] leading-6 text-slate-600">
-              To become a preferred self-drive car hire
-              brand in Kenya, recognized for reliable
-              vehicles, customer care, and convenient
-              rental experiences.
+              Request collection in Nairobi, at JKIA or Wilson Airport, or another agreed location. Our team confirms availability and any handover charges.
             </p>
           </article>
         </div>

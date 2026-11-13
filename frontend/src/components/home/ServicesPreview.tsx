@@ -77,7 +77,7 @@ export default function ServicesPreview() {
                   </p>
 
                   <Link
-                    href={`/services#${service.slug}`}
+                    href={`/services/${service.slug}`}
                     className="mt-4 inline-flex min-h-9 w-fit items-center gap-1.5 text-[13px] font-medium text-[#E86D00] transition-colors hover:text-[#0B1C4D]"
                   >
                     Learn More

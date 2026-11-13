@@ -28,6 +28,6 @@ export default function ConvexDashboard() {
     <Link href="/dashboard/bookings" className="inline-block rounded-xl bg-orange-600 px-5 py-3 font-bold text-white">Review booking requests</Link>
     <div className="flex flex-wrap gap-4"><Link href="/dashboard/cars" className="rounded-xl border bg-white px-5 py-3 font-bold">Add cars, photos &amp; rates</Link><Link href="/dashboard/fleet" className="rounded-xl border bg-white px-5 py-3 font-bold">Fleet compliance and maintenance</Link></div>
     <section className="space-y-4 rounded-2xl border bg-white p-6"><h2 className="text-xl font-bold">Confirmed rental policies</h2><ul className="list-disc space-y-3 pl-5 text-sm">{Object.entries(rentalTerms).map(([key, value]) => <li key={key}>{value}</li>)}</ul></section>
-    <section className="rounded-2xl border bg-white p-6"><h2 className="font-bold">Business contact</h2><p className="mt-2">{siteConfig.email}</p><p>{siteConfig.phone}</p><p>{siteConfig.secondaryPhone}</p></section>
+    <section className="rounded-2xl border bg-white p-6"><h2 className="font-bold">Business contact</h2><p className="mt-2">{siteConfig.email}</p><p>{siteConfig.phone}</p></section>
   </Workspace>;
 }

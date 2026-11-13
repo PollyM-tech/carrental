@@ -29,6 +29,7 @@ export default defineSchema({
   }).index("by_vehicle", ["vehicleId"]),
   movaraBookingRequests: defineTable({
     customerId: v.id("users"),
+    referralSource: v.optional(v.string()),
     requestKey: v.string(),
     vehiclePreference: v.string(),
     vehicleId: v.optional(v.id("movaraVehicles")),
@@ -63,6 +64,7 @@ export default defineSchema({
     reason: v.string(), updatedAt: v.number(), updatedBy: v.id("users"),
   }).index("by_customer", ["customerId"]),
   movaraEnquiries: defineTable({
+    referralSource: v.optional(v.string()),
     requestKey: v.string(), kind: v.union(v.literal("booking"), v.literal("general")), name: v.string(), phone: v.string(), email: v.string(),
     vehicle: v.string(), pickupDate: v.string(), returnDate: v.string(), pickupLocation: v.string(), returnLocation: v.string(), message: v.string(),
     status: v.union(v.literal("new"), v.literal("contacted"), v.literal("closed")), updatedAt: v.number(),

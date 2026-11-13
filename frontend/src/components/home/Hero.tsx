@@ -43,7 +43,7 @@ export default function Hero() {
       className="relative isolate flex min-h-[520px] items-center overflow-hidden bg-[#0B1C4D] sm:min-h-[570px] lg:min-h-[620px]"
     >
       {/* Background slideshow */}
-      {heroImages.map((image, index) => (
+      {heroImages.map((image, index) => (index === 0 || index === activeHero) && (
         <div
           key={image}
           aria-hidden="true"
@@ -56,7 +56,7 @@ export default function Hero() {
             alt=""
             fill
             priority={index === 0}
-            quality={85}
+            quality={75}
             sizes="100vw"
             className="object-cover object-center"
           />

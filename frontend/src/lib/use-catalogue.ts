@@ -4,10 +4,10 @@ import { ConvexReactClient } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { catalogueCar } from "./catalogue";
 import type { Car } from "@/data/cars";
-export function useCatalogue() {
-  const [cars, setCars] = useState<Car[]>([]);
+export function useCatalogue(initialCars?: Car[]) {
+  const [cars, setCars] = useState<Car[]>(initialCars ?? []);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(initialCars === undefined);
   useEffect(() => {
     let active = true;
     const url = process.env.NEXT_PUBLIC_CONVEX_URL;

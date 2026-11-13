@@ -1,3 +1,7 @@
+import type { Metadata } from "next";
+import { cache } from "react";
+import { notFound } from "next/navigation";
+import { pageMetadata } from "@/lib/seo";
 
 import VehicleGallery from "@/components/vehicles/VehicleGallery";
 import Link from "next/link";
@@ -24,45 +28,29 @@ type PageProps = {
   params: Promise<{ carId: string }>;
 };
 
+const getCar = cache(async (carId: string) => {
+  const record = (await fetchQuery(api.vehicles.publicList, {})).find(vehicle => vehicle._id === carId);
+  return record ? catalogueCar(record) : null;
+});
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { carId } = await params;
+  const car = await getCar(carId);
+  return car ? pageMetadata(`${car.name} Hire in Nairobi`, `Request ${car.name} self-drive hire with Movara. ${car.pricePerDay === null ? "Ask for a quote." : `Listed daily rate: ${formatPrice(car.pricePerDay)}.`} Confirm availability and rental terms with our team.`, `/cars/${encodeURIComponent(carId)}`) : { title: "Vehicle not found", robots: { index: false } };
+}
+
 export default async function CarDetailsPage({
   params,
 }: PageProps) {
   const { carId } = await params;
-  let car;
-  try {
-    const record = (await fetchQuery(api.vehicles.publicList, {})).find(vehicle => vehicle._id === carId);
-    car = record ? catalogueCar(record) : null;
-  } catch { car = null; }
-
-  if (!car) {
-    return (
-      <main className="bg-[#F5F8FF] px-4 py-20 sm:px-6">
-        <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-8 text-center">
-          <h1 className="text-2xl font-bold text-[#0B1C4D]">
-            Vehicle Not Found
-          </h1>
-
-          <p className="mt-3 text-sm leading-6 text-slate-600">
-            This vehicle could not be found.
-            Please browse our current fleet.
-          </p>
-
-          <Link
-            href="/cars"
-            className="mt-5 inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#FF7A00] px-4 py-2.5 text-[13px] font-medium text-white"
-          >
-            <ArrowLeft size={16} />
-            Back to Cars
-          </Link>
-        </div>
-      </main>
-    );
-  }
+  const car = await getCar(carId);
+  if (!car) notFound();
 
   const canInquire = car.status === "available";
+  const whatsappUrl = `https://wa.me/254716741039?text=${encodeURIComponent(`Hello Movara, I would like to enquire about ${car.name}. My pickup date is: __. Return date: __. Please confirm availability and rental terms.`)}`;
 
   return (
     <main className="bg-[#F5F8FF] px-4 py-12 sm:px-6 sm:py-14 lg:px-8">
+      <div className="mx-auto mb-5 max-w-7xl"><a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="font-semibold text-green-800 underline">Ask about {car.name} on WhatsApp</a></div>
       <div className="mx-auto max-w-7xl">
         <Link
           href="/cars"
