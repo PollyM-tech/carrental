@@ -13,7 +13,7 @@ export default function WebsiteLayout({
     <div className="flex min-h-screen flex-col">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
         "@context": "https://schema.org", "@type": "AutoRental", name: siteConfig.businessName,
-        url: "https://www.movaracarhire.com", image: "https://www.movaracarhire.com/logo.png",
+        url: "https://www.movaracarhire.com", image: "https://www.movaracarhire.com/logo.jpg",
         telephone: ["+254716741039"], email: siteConfig.email,
         address: { "@type": "PostalAddress", streetAddress: siteConfig.streetAddress, addressLocality: "Nairobi", addressCountry: "KE" },
         hasMap: siteConfig.mapUrl,

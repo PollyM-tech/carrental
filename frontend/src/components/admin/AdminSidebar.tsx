@@ -104,7 +104,7 @@ export default function AdminSidebar({
             >
               <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-white">
                 <Image
-                  src="/logo.png"
+                  src="/logo.jpg"
                   alt="Movara Car Hire logo"
                   fill
                   sizes="44px"

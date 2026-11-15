@@ -21,7 +21,9 @@ try {
  for(const path of ['/','/privacy','/sign-in','/movara-access']){
   const r=await fetch(origin+path,{redirect:'manual',signal:AbortSignal.timeout(10000)});assert.equal(r.status,200,path);
   assert.equal(r.headers.get('x-content-type-options'),'nosniff');assert.equal(r.headers.get('x-frame-options'),'DENY');
-  if(path==='/'){const html=await r.text();assert.ok(!html.includes('Loading featured vehicles'));assert.ok(html.includes('Before you book'));assert.ok(html.includes('Guarantor and next-of-kin'));assert.ok(html.includes('Germany'));}
+  assert.equal(r.headers.get('x-permitted-cross-domain-policies'), 'none');
+  for (const directive of ["base-uri 'self'", "object-src 'none'", "frame-ancestors 'none'", "form-action 'self'"]) assert.ok(r.headers.get('content-security-policy')?.includes(directive));
+  if(path==='/'){const html=await r.text();assert.ok(!html.includes('Loading featured vehicles'));assert.ok(html.includes('Before you book'));assert.ok(html.includes('Switch to dark mode'));assert.ok(html.includes('movara-theme'));assert.ok(html.indexOf('localStorage.getItem') < html.indexOf('<body'), 'Theme preference is applied before the page body');assert.ok(html.includes('Guarantor and next-of-kin'));assert.ok(html.includes('Germany'));}
   if(path==='/privacy'){const html=await r.text();assert.ok(html.includes('Information we use'));assert.ok(html.includes('Your cookie preferences'));assert.ok(html.includes('>Accept<'));assert.ok(html.includes('>Decline<'));}
  }
  // SEO must be present in HTTP HTML without running JavaScript.

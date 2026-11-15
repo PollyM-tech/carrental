@@ -1,6 +1,7 @@
 
 "use client";
 
+import ThemeToggle from "@/components/theme/ThemeToggle";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuthActions } from "@convex-dev/auth/react";
@@ -100,6 +101,7 @@ export default function AdminHeader({
 
         {/* Right: Website, notifications and account */}
         <div className="flex shrink-0 items-center gap-2">
+          <ThemeToggle />
           <Link
             href="/"
             target="_blank"

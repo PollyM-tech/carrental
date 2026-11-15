@@ -1,3 +1,5 @@
+import PageThemeToggle from "@/components/theme/PageThemeToggle";
+import { themeInitScript } from "@/lib/theme";
 import Analytics from "@/components/privacy/Analytics";
 
 import CookieConsent from "@/components/privacy/CookieConsent";
@@ -6,9 +8,9 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   icons: {
-    icon: [{ url: "/favicon.png?v=fe91dd984f", type: "image/png", sizes: "1254x1254" }],
-    shortcut: "/favicon.ico?v=fe91dd984f",
-    apple: [{ url: "/apple-touch-icon.png?v=fe91dd984f", sizes: "180x180", type: "image/png" }],
+    icon: [{ url: "/favicon.png?v=07090bc94e", type: "image/png", sizes: "512x512" }],
+    shortcut: "/favicon.ico?v=07090bc94e",
+    apple: [{ url: "/apple-touch-icon.png?v=07090bc94e", sizes: "180x180", type: "image/png" }],
   },
   metadataBase: new URL("https://www.movaracarhire.com"),
   title: {
@@ -35,11 +37,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head><script dangerouslySetInnerHTML={{ __html: themeInitScript }} /></head>
       <body
         suppressHydrationWarning
-        className="min-h-screen bg-white text-slate-950"
+        className="min-h-screen bg-background text-foreground"
       >
+        <PageThemeToggle />
         {children}
         <CookieConsent />
         <Analytics />

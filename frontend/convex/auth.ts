@@ -45,7 +45,7 @@ password.authorize = async (params, ctx) => {
   return result;
 };
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
-  providers: [password, Google({ profile: googleProfile })],
+  providers: [password, Google({ profile: googleProfile, authorization: { params: { scope: "openid email profile" } } })],
   signIn: { maxFailedAttempsPerHour: 60 },
   callbacks: {
     async redirect({ redirectTo }) { return authRedirect(redirectTo, process.env.SITE_URL!, process.env.MOVARA_AUTH_LOCAL_ORIGIN); },

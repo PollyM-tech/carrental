@@ -1,10 +1,14 @@
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireRole, requireUser } from "./lib/permissions";
 import { normalisePhone } from "./lib/identity";
 import { availableFor, rentalEstimate, requiredText } from "./lib/vehicle_rules";
 import { reservedConflict, canEditVerification, requireVerificationChecks, IN_PERSON_APPROVED_MESSAGE } from "./lib/rental_checks";
 import { bookingDates, bookingText, requireBookingOwner } from "./lib/booking_input";
+
+function bookingError(message: string, code = "INVALID_INPUT") {
+  return new ConvexError({ code, message });
+}
 
 export const mine = query({
   args: {},
@@ -23,25 +27,35 @@ export const create = mutation({
   args: { referralSource: v.optional(v.string()), referralDetails: v.optional(v.string()), requestKey: v.string(), vehicleId: v.id("movaraVehicles"), pickupDate: v.string(), returnDate: v.string(), pickupLocation: v.string(), phone: v.string(), customerName: v.optional(v.string()) },
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
-    if (!/^[a-zA-Z0-9-]{16,64}$/.test(args.requestKey)) throw new Error("Refresh this booking form and retry.");
-    const rentalDays = bookingDates(args.pickupDate, args.returnDate);
-    const pickupLocation = bookingText(args.pickupLocation, "Pickup location", 200);
-    const phone = normalisePhone(args.phone);
-    if (user.signupReferralRequired) throw new Error("Complete your account registration first.");
+    if (!/^[a-zA-Z0-9-]{16,64}$/.test(args.requestKey)) throw bookingError("Refresh this booking form and retry.");
+    const { rentalDays, pickupLocation, phone, customerName } = (() => {
+      try {
+        return {
+          rentalDays: bookingDates(args.pickupDate, args.returnDate),
+          pickupLocation: bookingText(args.pickupLocation, "Pickup location", 200),
+          phone: normalisePhone(args.phone),
+          customerName: args.customerName?.trim() ? requiredText(args.customerName, "Customer name", 120) : undefined,
+        };
+      } catch (error) {
+        // These helpers validate only customer input and contain no database/network calls.
+        if (error instanceof Error) throw bookingError(error.message);
+        throw error;
+      }
+    })();
+    if (user.signupReferralRequired) throw bookingError("Complete your account registration first.", "REGISTRATION_REQUIRED");
     const referralSource = user.referralSource;
     const referralDetails = user.referralDetails;
-    const customerName = args.customerName?.trim() ? requiredText(args.customerName, "Customer name", 120) : undefined;
     const existing = await ctx.db.query("movaraBookingRequests").withIndex("by_customer_key", q => q.eq("customerId", user._id).eq("requestKey", args.requestKey)).unique();
     if (existing) {
-      if (existing.vehicleId !== args.vehicleId || existing.pickupDate !== args.pickupDate || existing.returnDate !== args.returnDate || existing.pickupLocation !== pickupLocation || existing.phone !== phone || existing.customerName !== customerName || existing.referralSource !== referralSource || existing.referralDetails !== referralDetails) throw new Error("This request was already received with different details. Refresh your requests before submitting another one.");
+      if (existing.vehicleId !== args.vehicleId || existing.pickupDate !== args.pickupDate || existing.returnDate !== args.returnDate || existing.pickupLocation !== pickupLocation || existing.phone !== phone || existing.customerName !== customerName || existing.referralSource !== referralSource || existing.referralDetails !== referralDetails) throw bookingError("This request was already received with different details. Refresh your requests before submitting another one.", "REQUEST_CONFLICT");
       return existing._id;
     }
     const vehicle = await ctx.db.get(args.vehicleId);
-    if (!vehicle) throw new Error("Select a current vehicle.");
+    if (!vehicle) throw bookingError("Select a current vehicle.");
     const blocks = await ctx.db.query("movaraVehicleBlocks").withIndex("by_vehicle", q => q.eq("vehicleId", vehicle._id)).collect();
     const rentals = await ctx.db.query("movaraBookingRequests").withIndex("by_vehicle", q => q.eq("vehicleId", vehicle._id)).collect();
-    if (reservedConflict(rentals, args.pickupDate, args.returnDate)) throw new Error("This vehicle is reserved for those dates or has not yet been returned.");
-    if (!availableFor(vehicle, args.pickupDate, args.returnDate, blocks)) throw new Error("This vehicle is unavailable or its compliance does not cover your dates. Choose another vehicle or dates.");
+    if (reservedConflict(rentals, args.pickupDate, args.returnDate)) throw bookingError("This vehicle is reserved for those dates or has not yet been returned.", "BOOKING_UNAVAILABLE");
+    if (!availableFor(vehicle, args.pickupDate, args.returnDate, blocks)) throw bookingError("This vehicle is unavailable or its compliance does not cover your dates. Choose another vehicle or dates.", "BOOKING_UNAVAILABLE");
     const vehiclePreference = vehicle.name;
     const dailyRateKes = vehicle.pricePerDay;
     const estimatedRentalKes = dailyRateKes === undefined ? undefined : rentalEstimate(dailyRateKes, rentalDays);
@@ -58,7 +72,7 @@ export const cancel = mutation({
     const booking = await ctx.db.get(id);
     requireBookingOwner(booking, user._id);
     if (booking!.status === "cancelled") return;
-    if (!canEditVerification(booking!.status)) throw new Error("Contact Movara to change an approved rental.");
+    if (!canEditVerification(booking!.status)) throw bookingError("Contact Movara to change an approved rental.");
     await ctx.db.patch(id, { status: "cancelled", updatedAt: Date.now() });
     await ctx.db.insert("accessEvents", { subjectId: user._id, actorId: user._id, action: "booking.request_cancelled", occurredAt: Date.now() });
   },

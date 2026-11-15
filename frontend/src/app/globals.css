@@ -12,15 +12,65 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+:root { color-scheme: light; }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #0b1220;
+  --foreground: #e8edf5;
 }
+.theme-sun { display: none; }
+:root[data-theme="dark"] .theme-sun { display: block; }
+:root[data-theme="dark"] .theme-moon { display: none; }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Keep existing brand colors and photographs while adapting shared UI surfaces. */
+@layer base {
+  :root[data-theme="dark"] *,
+  :root[data-theme="dark"] ::before,
+  :root[data-theme="dark"] ::after { border-color: #334155; }
+  input, select, textarea { accent-color: #f97316; }
+  :root[data-theme="dark"] option { background: #182336; color: #e8edf5; }
+}
+
+@layer utilities {
+  :root[data-theme="dark"] :is(.bg-white) { background-color: #141e2e; }
+  :root[data-theme="dark"] [class~="bg-white/95"] { background-color: rgb(20 30 46 / 95%); }
+  :root[data-theme="dark"] :is(.bg-slate-50, [class~="bg-[#F5F8FF]"], [class~="bg-[#EEF4FF]"]) { background-color: #101a2b; }
+  :root[data-theme="dark"] :is(.bg-slate-100, .bg-slate-200, .bg-slate-300) { background-color: #223047; }
+  :root[data-theme="dark"] :is(.bg-orange-50, .bg-orange-100) { background-color: #2b211d; }
+  :root[data-theme="dark"] [class~="bg-orange-50/50"] { background-color: rgb(43 33 29 / 65%); }
+  :root[data-theme="dark"] :is(.bg-green-50, .bg-green-100) { background-color: #132e29; }
+  :root[data-theme="dark"] :is(.bg-red-50, .bg-red-100) { background-color: #351d29; }
+  :root[data-theme="dark"] :is(.bg-blue-50, .bg-blue-100) { background-color: #172c49; }
+  :root[data-theme="dark"] :is(.bg-amber-50, .bg-amber-100, .bg-yellow-50, .bg-yellow-100) { background-color: #332914; }
+
+  :root[data-theme="dark"] :is(.text-slate-950, .text-slate-900, .text-slate-800, [class~="text-[#0B1C4D]"]) { color: #eef3fc; }
+  :root[data-theme="dark"] :is(.text-slate-700, .text-slate-600, [class~="text-[#334155]"]) { color: #bac7db; }
+  :root[data-theme="dark"] :is(.text-slate-500, .text-slate-400) { color: #9caec6; }
+  :root[data-theme="dark"] :is(.text-orange-600, .text-orange-700, .text-orange-800, .text-orange-900, [class~="text-[#E86D00]"], [class~="text-[#B84300]"]) { color: #ffad6b; }
+  :root[data-theme="dark"] :is(.text-green-600, .text-green-700, .text-green-800) { color: #86e0b2; }
+  :root[data-theme="dark"] :is(.text-red-600, .text-red-700, .text-red-800) { color: #ff9da7; }
+  :root[data-theme="dark"] :is(.text-blue-600, .text-blue-700, .text-blue-800) { color: #93c5fd; }
+  :root[data-theme="dark"] :is(.text-amber-700, .text-amber-800, .text-yellow-700, .text-yellow-800) { color: #fcd77d; }
+
+  :root[data-theme="dark"] :is(.border-slate-100, .border-slate-200, .border-slate-300, [class~="border-slate-200/80"]) { border-color: #33445d; }
+  :root[data-theme="dark"] :is(.border-orange-100, .border-orange-200) { border-color: #684126; }
+  :root[data-theme="dark"] .border-green-200 { border-color: #285c49; }
+  :root[data-theme="dark"] .border-red-200 { border-color: #713542; }
+  :root[data-theme="dark"] .border-blue-200 { border-color: #355d87; }
+  :root[data-theme="dark"] [class~="border-[#0B1C4D]"] { border-color: #a3b8da; }
+  :root[data-theme="dark"] :is(.ring-slate-100, .ring-slate-200) { --tw-ring-color: #33445d; }
+  :root[data-theme="dark"] [class~="placeholder:text-slate-400"]::placeholder { color: #91a1b7; }
+
+  :root[data-theme="dark"] :is([class~="hover:bg-slate-50"], [class~="hover:bg-slate-100"], [class~="hover:bg-white"]):hover { background-color: #25344b; }
+  :root[data-theme="dark"] :is([class~="hover:bg-orange-50"], [class~="hover:bg-orange-100"]):hover { background-color: #403025; }
+  :root[data-theme="dark"] [class~="hover:text-[#E86D00]"]:hover { color: #ffc18f; }
+  :root[data-theme="dark"] [class~="hover:border-orange-200"]:hover { border-color: #c07639; }
 }

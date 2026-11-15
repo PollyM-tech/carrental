@@ -57,7 +57,13 @@ export default function SignIn() {
       } catch (error) { setMessage(isConnectionError(error) ? "Unable to reach Movara. Check your connection and try again." : error instanceof Error && error.message.includes("LOGIN_LOCKED") ? "Five failed login attempts. Wait 15 minutes before trying again." : signup ? (owner ? "Account creation failed. Use the private admin sign-in page. If already registered, sign in." : "Account creation failed. Check your details. If already registered, sign in.") : "Sign-in failed. Check your email and password, then try again."); }
       finally { setBusy(false); }
     }}>
-      {googleAvailable && <><button type="button" disabled={busy} className="w-full rounded-xl border border-slate-300 px-4 py-3 font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50" onClick={async () => {
+      <Field required label="Email" type="email" value={email} onChange={setEmail} />
+      <Field required label={signup ? "Password (12–128 characters)" : "Password"} type="password" value={password} onChange={setPassword} />
+      {signup && <><Field label="Phone / WhatsApp number with country code" type="tel" required={!owner} value={phone} onChange={setPhone} /><p className="text-xs text-slate-600">International numbers welcome: +44 7700 900123, +1 202 555 0123, or +254 716 741039. Kenyan 07… and 01… numbers also work.</p></>}
+      {signup && <ReferralSource required value={referralSource} onChange={setReferralSource} details={referralDetails} onDetailsChange={setReferralDetails} />}
+      <button disabled={busy || signup && (password.length < 12 || password.length > 128)} className={buttonStyle}>{busy ? "Please wait…" : signup ? "Create account" : "Sign in"}</button>
+      {!signup && <button type="button" disabled={busy} className="block text-sm underline" onClick={() => { setForgot(true); setMessage(""); setPassword(""); }}>Forgot password?</button>}
+      {googleAvailable && <><p className="text-center text-xs text-slate-500">or</p><button type="button" disabled={busy} className="w-full rounded-xl border border-slate-300 px-4 py-3 font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50" onClick={async () => {
         if (busy) return;
         setBusy(true); setMessage("");
         try {
@@ -65,13 +71,7 @@ export default function SignIn() {
           await signIn("google", { redirectTo: `${window.location.origin}/sign-in?googleReturn=1${car ? `&car=${encodeURIComponent(car)}` : ""}` });
         } catch { setMessage("Unable to open Google sign-in. Please retry or use email and password."); }
         finally { setBusy(false); }
-      }}>Continue with Google</button><p className="text-center text-xs text-slate-500">or use your email and password</p></>}
-      <Field required label="Email" type="email" value={email} onChange={setEmail} />
-      <Field required label={signup ? "Password (12–128 characters)" : "Password"} type="password" value={password} onChange={setPassword} />
-      {signup && <><Field label="Phone / WhatsApp number with country code" type="tel" required={!owner} value={phone} onChange={setPhone} /><p className="text-xs text-slate-600">International numbers welcome: +44 7700 900123, +1 202 555 0123, or +254 716 741039. Kenyan 07… and 01… numbers also work.</p></>}
-      {signup && <ReferralSource required value={referralSource} onChange={setReferralSource} details={referralDetails} onDetailsChange={setReferralDetails} />}
-      <button disabled={busy || signup && (password.length < 12 || password.length > 128)} className={buttonStyle}>{busy ? "Please wait…" : signup ? "Create account" : "Sign in"}</button>
-      {!signup && <button type="button" disabled={busy} className="block text-sm underline" onClick={() => { setForgot(true); setMessage(""); setPassword(""); }}>Forgot password?</button>}
+      }}>Continue with Google</button></>}
       <button type="button" disabled={busy} className="block text-sm underline" onClick={() => { setSignup(!signup); setMessage(""); setPassword(""); }}>{signup ? "Already registered? Sign in" : "New here? Create an account"}</button>
     </form>}
     <p className="text-sm text-slate-600">Customers continue to their booking dashboard after signing in.</p></section>

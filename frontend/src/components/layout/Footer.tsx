@@ -49,7 +49,7 @@ export default function Footer() {
             >
               <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-white">
                 <Image
-                  src="/logo.png"
+                  src="/logo.jpg"
                   alt="Movara Car Hire logo"
                   fill
                   sizes="48px"

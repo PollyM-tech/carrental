@@ -1,5 +1,6 @@
 "use client";
 import { trackConversion } from "@/lib/analytics";
+import { publicErrorMessage } from "@/lib/public-error";
 import { bookingWhatsAppUrl } from "@/lib/booking-whatsapp";
 import SignupReferralCompletion from "@/components/auth/SignupReferralCompletion";
 import CustomerData from "@/components/privacy/CustomerData";
@@ -42,7 +43,7 @@ function BookingWorkspace() {
   const contactSavePending = useRef(false);
   let phoneUnchanged = phone === account?.phone;
   try { phoneUnchanged = normalisePhone(phone) === account?.phone; } catch { /* Show validation feedback if saving invalid input is attempted. */ }
-  async function run(action: () => Promise<void>) { setBusy(true); setMessage(""); try { await action(); } catch(e) { setMessage(e instanceof Error ? e.message : "Please retry."); } finally { setBusy(false); } }
+  async function run(action: () => Promise<void>) { setBusy(true); setMessage(""); try { await action(); } catch(e) { setMessage(publicErrorMessage(e)); } finally { setBusy(false); } }
   if (account === undefined) return <main className="p-10 text-center">Opening your booking dashboard…</main>;
   if (!account) return <main className="p-10"><Link href="/sign-in" className="underline">Sign in to view your bookings</Link></main>;
   if (account.signupReferralRequired) return <main className="mx-auto max-w-xl px-4 py-10"><SignupReferralCompletion /></main>;
@@ -56,8 +57,10 @@ function BookingWorkspace() {
       if (bookingSubmitPending.current) return;
       bookingSubmitPending.current = true; setBookingSubmitting(true); setMessage(""); setBookingFeedback("");
       try {
-        if (!chosen) throw new Error("Choose an available vehicle.");
-        const internationalPhone = normalisePhone(phone); bookingDates(pickup, returned);
+        if (!chosen) { setBookingFeedback("Choose an available vehicle."); return; }
+        let internationalPhone: string;
+        try { internationalPhone = normalisePhone(phone); bookingDates(pickup, returned); }
+        catch (error) { setBookingFeedback(error instanceof Error ? error.message : "Check your phone number and rental dates."); return; }
         requestKey.current ??= crypto.randomUUID();
         const reference = await create({ customerName, requestKey: requestKey.current, vehicleId: vehicle as Id<"movaraVehicles">, pickupDate: pickup, returnDate: returned, pickupLocation: location, phone: internationalPhone });
         const url = bookingWhatsAppUrl({ reference, name: customerName, email: account.email, phone: internationalPhone, vehicle: chosen.name, pickupDate: pickup, returnDate: returned, pickupLocation: location, referralSource: account.referralSource, referralDetails: account.referralDetails });
@@ -67,7 +70,7 @@ function BookingWorkspace() {
         setPhone(current => current === null || current === phone ? internationalPhone : current);
         setBookingFeedback("Your booking request is saved. Opening WhatsApp—tap Send to notify Movara.");
         try { window.location.assign(url); } catch { setBookingFeedback("Your booking request is saved. Use Open WhatsApp below and tap Send to notify Movara."); }
-      } catch (error) { const raw = error instanceof Error ? error.message : "Please retry."; setBookingFeedback(raw.match(/Uncaught Error: ([^\n]+)/)?.[1] ?? raw); }
+      } catch (error) { setBookingFeedback(publicErrorMessage(error, "Unable to save your booking request. Please try again or contact Movara.")); }
       finally { bookingSubmitPending.current = false; setBookingSubmitting(false); }
     }}><h2 className="text-xl font-bold">Request a booking</h2><Message message={bookingFeedback} />{savedBooking && <div role="status" className="space-y-2 rounded-xl border border-green-200 bg-green-50 p-4 text-sm"><p>Saved booking reference: <span className="break-all font-mono">{savedBooking.reference}</span></p><a href={savedBooking.url} target="_blank" rel="noopener noreferrer" className="inline-block font-bold text-green-800 underline">Open WhatsApp and send booking details</a><p>Your request is already in Movara’s admin dashboard, even if you do not send the WhatsApp message.</p></div>}<p className="text-sm text-slate-600">Tell us the vehicle you need and your dates. Our team will confirm availability and the flat daily or agreed market rate. Submitting a request does not reserve a vehicle or confirm a rental.</p>
       <fieldset disabled={bookingSubmitting} className="space-y-4"><Field required label="Full name" value={customerName} onChange={setName} /><Field required type="tel" label="Phone / WhatsApp number with country code" value={phone} onChange={setPhone} /><label className="block text-sm font-semibold">Vehicle<select required value={vehicle} onChange={event => { setVehicle(event.target.value); requestKey.current = null; }} className="mt-2 w-full rounded-xl border p-3"><option value="">{vehicles === undefined ? "Loading vehicles…" : "Choose a vehicle"}</option>{vehicles?.map(car => <option key={car._id} value={car._id}>{car.name} · {car.pricePerDay === null ? "Price on request" : `KES ${car.pricePerDay.toLocaleString()} / day`}</option>)}</select></label>

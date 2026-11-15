@@ -1,6 +1,7 @@
 
 "use client";
 
+import ThemeToggle from "@/components/theme/ThemeToggle";
 import ContactsDropdown from "./ContactsDropdown";
 import Image from "next/image";
 import Link from "next/link";
@@ -96,7 +97,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/95 backdrop-blur-xl">
       <nav
         aria-label="Main navigation"
-        className="mx-auto flex h-[72px] max-w-7xl items-center justify-between gap-4 px-5 sm:px-8"
+        className="mx-auto flex h-[72px] max-w-7xl items-center justify-between gap-2 px-4 sm:gap-4 sm:px-8"
       >
         {/* Brand */}
         <Link
@@ -107,7 +108,7 @@ export default function Navbar() {
         >
           <div className="relative h-11 w-11 overflow-hidden rounded-xl bg-slate-50 ring-1 ring-slate-100">
             <Image
-              src="/logo.png"
+              src="/logo.jpg"
               alt="Movara Car Hire logo"
               fill
               sizes="44px"
@@ -116,7 +117,7 @@ export default function Navbar() {
             />
           </div>
 
-          <div className="leading-tight">
+          <div className="hidden min-[380px]:block leading-tight">
             <p className="text-[19px] font-bold tracking-[-0.035em] text-[#0B1C4D]">
               Movara
             </p>
@@ -161,6 +162,8 @@ export default function Navbar() {
             WhatsApp
           </a>
         </div>
+
+        <ThemeToggle />
 
         {/* Mobile and tablet menu button */}
         <button
