@@ -11,6 +11,8 @@ await Promise.all([
   sharp(source).resize(180, 180, { fit: 'contain', background: '#ffffff' }).png().toFile(new URL('public/apple-touch-icon.png', root).pathname),
   sharp(source).resize(120, 120, { fit: 'contain', background: '#ffffff' }).png().toFile(new URL('public/logo-google.png', root).pathname),
 ]);
+// Next.js serves this file as /icon.png and adds its icon metadata.
+await copyFile(new URL('public/favicon.png', root), new URL('src/app/icon.png', root));
 const sizes = [16, 32, 48, 64];
 const images = await Promise.all(sizes.map(size => sharp(source).resize(size, size, { fit: 'contain', background: '#ffffff' }).ensureAlpha().png().toBuffer()));
 const header = Buffer.alloc(6 + sizes.length * 16);
@@ -28,5 +30,5 @@ await writeFile(new URL('src/app/favicon.ico', root), ico);
 await copyFile(new URL('src/app/favicon.ico', root), new URL('public/favicon.ico', root));
 const layoutPath = new URL('src/app/layout.tsx', root);
 const layout = await readFile(layoutPath, 'utf8');
-await writeFile(layoutPath, layout.replace(/(\/(?:favicon\.png|favicon\.ico|apple-touch-icon\.png)\?v=)[a-f0-9]+/g, `$1${version}`));
+await writeFile(layoutPath, layout.replace(/(\/(?:icon\.png|favicon\.png|favicon\.ico|apple-touch-icon\.png)\?v=)[a-f0-9]+/g, `$1${version}`));
 console.log(`Brand assets prepared from approved logo.jpg. Cache version: ${version}`);

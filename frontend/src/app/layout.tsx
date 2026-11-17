@@ -8,7 +8,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   icons: {
-    icon: [{ url: "/favicon.png?v=07090bc94e", type: "image/png", sizes: "512x512" }],
+    icon: [{ url: "/icon.png?v=07090bc94e", type: "image/png", sizes: "512x512" }],
     shortcut: "/favicon.ico?v=07090bc94e",
     apple: [{ url: "/apple-touch-icon.png?v=07090bc94e", sizes: "180x180", type: "image/png" }],
   },

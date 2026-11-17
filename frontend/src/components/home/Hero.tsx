@@ -56,6 +56,7 @@ export default function Hero() {
             alt=""
             fill
             priority={index === 0}
+            loading="eager"
             quality={75}
             sizes="100vw"
             className="object-cover object-center"
