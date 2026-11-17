@@ -1,3 +1,4 @@
+import CookieSettingsButton from "@/components/privacy/CookieSettingsButton";
 import { siteConfig } from "@/config/site";
 
 import Image from "next/image";
@@ -199,7 +200,7 @@ export default function Footer() {
           </p>
 
           <p>
-            <Link href="/rental-terms" className="mr-4 underline hover:text-white">Rental terms</Link><Link href="/privacy" className="underline hover:text-white">Privacy and cookies</Link>
+            <Link href="/rental-terms" className="mr-4 underline hover:text-white">Rental terms</Link><Link href="/privacy" className="underline hover:text-white">Privacy and cookies</Link><CookieSettingsButton />
           </p>
         </div>
       </div>
