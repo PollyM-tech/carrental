@@ -5,19 +5,27 @@ import vm from 'node:vm';
 import ts from 'typescript';
 function setup(id, cookie) {
  const events = [];
+ const dataLayer = [];
  const exports = {};
  const source = ts.transpileModule(readFileSync(new URL('../src/lib/analytics.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText;
- vm.runInNewContext(source, { exports, require: () => ({ optionalCookiesAllowed: value => value === 'accepted' }), process: { env: { NEXT_PUBLIC_GA_MEASUREMENT_ID: id } }, document: { cookie }, window: { location: { origin: 'https://www.movaracarhire.com', pathname: '/contact', search: '?name=private&phone=private' }, gtag: (...args) => events.push(args) } });
- return { events, send: exports.trackConversion };
+ vm.runInNewContext(source, { exports, require: () => ({ optionalCookiesAllowed: value => value === 'accepted' }), process: { env: { NEXT_PUBLIC_GA_MEASUREMENT_ID: id } }, document: { cookie }, window: { dataLayer, location: { origin: 'https://www.movaracarhire.com', pathname: '/contact', search: '?name=private&phone=private' }, gtag: (...args) => events.push(args) } });
+ return { events, dataLayer, analyticsId: exports.analyticsId, tagManagerId: exports.tagManagerId, send: exports.trackConversion };
 }
-test('analytics needs a valid measurement ID and explicit consent', () => {
- for (const [id, cookie] of [[undefined, 'accepted'], ['bad-id', 'accepted'], ['G-ABC123', 'declined'], ['G-ABC123', 'unknown']]) {
-  const { events, send } = setup(id, cookie); send('enquiry_saved'); assert.equal(events.length, 0);
+test('GTM conversions require explicit consent', () => {
+ for (const cookie of ['declined', 'unknown']) {
+  const state = setup(undefined, cookie); state.send('enquiry_saved');
+  assert.equal(state.dataLayer.length, 0);
+  assert.equal(state.events.length, 0);
  }
 });
-test('conversion events exclude query strings and customer information', () => {
- const { events, send } = setup('G-ABC123', 'accepted'); send('enquiry_saved');
- assert.equal(events.length, 1); assert.equal(events[0][1], 'enquiry_saved');
- assert.equal(events[0][2].page_location, 'https://www.movaracarhire.com/contact');
- assert.ok(!JSON.stringify(events).includes('private'));
+test('GTM receives conversions without private query strings or direct GA4 events', () => {
+ for (const id of [undefined, '', 'G-0K449R88PB']) {
+  const state = setup(id, 'accepted'); state.send('enquiry_saved');
+  assert.equal(state.tagManagerId, 'GTM-T7DP9KTX');
+  assert.equal(state.dataLayer.length, 1);
+  assert.equal(state.dataLayer[0].event, 'enquiry_saved');
+  assert.equal(state.dataLayer[0].page_location, 'https://www.movaracarhire.com/contact');
+  assert.ok(!JSON.stringify(state.dataLayer).includes('private'));
+  assert.equal(state.events.length, 0);
+ }
 });
